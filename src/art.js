@@ -50,18 +50,22 @@ const designs = {
 let instance = 0;
 
 function eye(x, y, color, expression, flip) {
-  const closed = expression === 'smile' || expression === 'wry';
+  const closed = expression === 'smile' || expression === 'laugh' || (expression === 'wry' && flip);
   const wide = expression === 'surprise';
-  const brow = expression === 'sad' ? 'M1 -10Q14 -19 35 -12' : expression === 'resolve' ? 'M1 -16Q18 -16 35 -8' : 'M1 -10Q14 -18 35 -13';
-  const lid = wide ? 'M0 6Q12 -10 27 -4Q35 -2 39 8' : 'M0 6Q14 -5 28 -2Q36 0 39 8';
+  const soft = ['shy', 'tender', 'sad'].includes(expression);
+  const brow = expression === 'sad' ? 'M1 -8Q14 -15 35 -16' : expression === 'resolve' ? 'M1 -16Q18 -16 35 -8' : 'M1 -10Q14 -18 35 -13';
+  const lid = wide ? 'M0 6Q12 -10 27 -4Q35 -2 39 8' : soft ? 'M0 7Q15 1 26 3Q35 4 39 10' : 'M0 6Q14 -5 28 -2Q36 0 39 8';
+  const iris = expression === 'shy' ? (flip ? 16 : 25) : 21;
   return `<g transform="translate(${x} ${y}) scale(${flip ? -1 : 1} 1)">
     <path d="${brow}" fill="none" stroke="#593745" stroke-width="2.3" stroke-linecap="round"/>
     ${closed ? '<path d="M0 9Q17 -6 36 7" fill="none" stroke="#382431" stroke-width="3.4" stroke-linecap="round"/><path d="M2 8 -5 4M33 5 39 3" stroke="#382431" stroke-width="1.7"/>' : `
       <path d="${lid}Q23 19 4 12Z" fill="#fff3ec" stroke="#724952" stroke-width="1.1"/>
-      <ellipse cx="21" cy="7" rx="${wide ? 8 : 9.5}" ry="${wide ? 9.8 : 8.4}" fill="${color}"/>
-      <ellipse cx="20" cy="6" rx="4.5" ry="6.8" fill="#29213b"/>
-      <path d="M12 10Q21 17 29 9" stroke="#ffc3d5" stroke-opacity=".6" fill="none"/>
-      <circle cx="17.7" cy="3.2" r="2.5" fill="#fff9ee"/><circle cx="25.3" cy="10" r="1.35" fill="#f9d9e2"/>
+      <g transform="translate(${iris - 21} ${soft ? 3 : 0})">
+        <ellipse cx="21" cy="7" rx="${wide ? 8 : 9.5}" ry="${soft ? 5.5 : wide ? 9.8 : 8.4}" fill="${color}"/>
+        <ellipse cx="20" cy="6" rx="4.5" ry="${soft ? 4.5 : 6.8}" fill="#29213b"/>
+        <path d="M14 9Q21 16 28 9" stroke="#ffc3d5" stroke-opacity=".6" fill="none"/>
+        <circle cx="17.7" cy="3.2" r="2.5" fill="#fff9ee"/><circle cx="25.3" cy="10" r="1.35" fill="#f9d9e2"/>
+      </g>
       <path d="${lid}M0 7 -5 3M2 4 -2 0" fill="none" stroke="#382331" stroke-width="2.65" stroke-linecap="round"/>`}
     </g>`;
 }
@@ -74,9 +78,12 @@ function mouth(expression) {
     surprise: 'M186 193Q193 183 202 190Q207 199 195 200Q186 199 186 193Z',
     sad: 'M183 194Q194 187 205 193Q194 191 183 194Z',
     resolve: 'M183 192Q191 189 197 191L205 188Q203 194 195 195Z',
+    shy: 'M186 191Q195 196 202 190Q199 197 192 196Z',
+    tender: 'M181 190Q194 195 205 187Q203 193 193 196Z',
+    laugh: 'M176 183Q195 189 211 181Q207 204 193 205Q181 201 176 183Z',
   };
   return `<path d="${paths[expression] || paths.neutral}" fill="#a45c68" stroke="#9a5263" stroke-width=".8"/>
-    <path d="M188 199Q196 201 202 197" fill="none" stroke="#ffe7da" stroke-width="1.5" stroke-linecap="round"/>`;
+    ${expression === 'laugh' ? '<path d="M180 185Q195 190 207 184L205 189Q195 194 182 190Z" fill="#ffece3"/>' : '<path d="M188 199Q196 201 202 197" fill="none" stroke="#ffe7da" stroke-width="1.5" stroke-linecap="round"/>'}`;
 }
 
 function accessory(which, color) {
@@ -108,15 +115,30 @@ function accessory(which, color) {
   }
 }
 
-function outfit(d, warm) {
+function outfit(character, d, warm) {
   if (!warm) return '';
+  if (character === 'ren') return `<path d="M136 301Q145 317 163 320H230Q249 316 258 299L278 554H116Z" fill="#48343e" stroke="#30202c" stroke-width="2"/>
+    <path d="M139 332Q198 353 257 330M133 376Q198 394 262 372M163 412h68v54h-68z" fill="none" stroke="#cb9c71" stroke-width="1.7" stroke-dasharray="3 4"/>
+    <path d="M131 407Q199 413 264 402" fill="none" stroke="#92735f" stroke-width="5"/>`;
+  if (character === 'yui') return `<path d="M125 255Q117 224 141 223L193 258 242 222Q276 220 275 252L249 289 198 319 141 286Z" fill="#57557e" stroke="${ink}" stroke-width="2.3"/>
+    <path d="M126 250Q147 285 198 310Q249 277 272 249" fill="none" stroke="#a2a3cf" stroke-width="2"/>
+    <path d="M170 298Q167 326 172 349M219 298Q226 321 221 352" fill="none" stroke="#b2efea" stroke-width="2.4"/>`;
   return `<path d="M142 230Q173 254 208 247L246 228Q263 237 260 269 223 303 157 283 135 267 142 230Z
     M203 276Q239 274 252 258L280 407 242 427Z" fill="${d.lining}" stroke="${ink}" stroke-width="2.1"/>
     <path d="M146 247Q195 276 255 242M149 263Q198 288 256 254M218 283 257 402M240 276 271 400" fill="none" stroke="${d.cloth[1]}" stroke-width="2" opacity=".52"/>
     <path d="M244 411 250 432M253 407 260 428M263 405 271 424M274 402 281 420" stroke="${d.lining}" stroke-width="3"/>`;
 }
 
-function arms(pose, id) {
+function heldObject(character) {
+  return {
+    mio: '<rect x="153" y="340" width="92" height="58" rx="6" fill="#302938" stroke="#191623" stroke-width="2.5"/><path d="M154 351h91v-9h-29l-5-9h-23l-7 9h-27z" fill="#c7a9be"/><circle cx="201" cy="371" r="19" fill="#595b73" stroke="#242132" stroke-width="4"/><circle cx="201" cy="371" r="12" fill="#38334c" stroke="#9683a9"/><path d="M195 365l7-3 5 4-9 7z" fill="#b7a7d6"/>',
+    ren: '<rect x="177" y="334" width="48" height="65" rx="9" fill="#c49e70" stroke="#512d34" stroke-width="2"/><ellipse cx="201" cy="337" rx="23" ry="6" fill="#e6cac1"/><path d="M180 354h42v25h-42z" fill="#835146"/><path d="M189 366q12-12 22 0-12 11-22 0z" fill="#eac293"/>',
+    yui: '<rect x="177" y="324" width="49" height="77" rx="7" fill="#454a68" stroke="#242337" stroke-width="3"/><rect x="182" y="327" width="40" height="13" rx="4" fill="#252a48"/><rect x="184" y="347" width="35" height="18" rx="2" fill="#a3d0cb"/><path d="M188 356h5l4-4 4 9 4-6h10" fill="none" stroke="#365967" stroke-width="1.3"/><circle cx="201" cy="378" r="5" fill="#c97692"/>',
+    suzu: '<path d="M153 331Q182 326 198 339Q221 327 248 330l-2 65q-28-2-48 8-23-11-46-5z" fill="#4f6a8d" stroke="#242c45" stroke-width="3"/><path d="M156 327q22-5 42 9 22-13 47-9v60q-22-2-47 10-21-11-42-7z" fill="#ede0c9" stroke="#937f76"/><path d="M198 337v58m-35-53q12-2 26 5m-26 4q12-2 26 5m-26 4q12-2 26 5m18-18q12-5 28-4m-28 14q12-5 28-5m-14-22v55l4-4 4 2v-54" fill="none" stroke="#a99485" stroke-width="1.4"/>',
+  }[character];
+}
+
+function arms(pose, id, character) {
   if (pose === 'offer') {
     return `<path d="M44 432Q31 397 51 364L108 325 123 364 88 408 160 426 153 478Q77 482 44 432Z" fill="url(#${id}coat)" stroke="${ink}" stroke-width="2.3"/>
       <path d="M140 415 159 418 175 430 198 432Q206 435 199 439L184 443 203 447Q211 451 202 454L184 454Q199 461 189 465L155 463 137 451Z" fill="url(#${id}skin)" stroke="${ink}" stroke-width="1.4"/>
@@ -127,6 +149,16 @@ function arms(pose, id) {
       <path d="M330 422Q313 398 285 409L122 451 135 492Q267 486 326 461Z" fill="url(#${id}coat)" stroke="${ink}" stroke-width="2.3"/>
       <path d="M110 442Q101 437 104 427L124 421Q133 423 129 428L120 433 139 433 142 452 125 465Z" fill="url(#${id}skin)" stroke="${ink}" stroke-width="1.4"/>`;
   }
+  if (pose === 'hold') {
+    return `<path d="M53 430Q37 400 71 353L97 331 120 359 106 396 151 359 181 395 113 444Q74 473 53 430ZM338 428Q361 403 327 353L296 334 277 366 292 402 246 359 217 394 284 442Q316 463 338 428Z" fill="url(#${id}coat)" stroke="${ink}" stroke-width="2.3"/>
+      ${heldObject(character)}
+      <path d="M141 372Q149 355 159 356l16 4q6 3 2 7l-12 1 11 8q7 5 2 11-7 6-25-2l-12-2zm118-1q-9-14-18-14l-15 6q-4 3-1 6l10-1-10 10q-6 6 0 10 8 4 24-5l12-2z" fill="url(#${id}skin)" stroke="${ink}" stroke-width="1.6"/>`;
+  }
+  if (pose === 'wave') {
+    return `<path d="M325 370Q347 352 363 317L357 242 318 244 316 303 282 326Z" fill="url(#${id}coat)" stroke="${ink}" stroke-width="2.3"/>
+      <path d="M322 249 318 228 305 212Q302 204 309 204L321 212 316 186Q316 177 322 180L331 200 334 175Q337 167 342 174L343 199 350 179Q355 173 359 180L355 207 363 195Q371 191 371 199L361 222Q358 238 348 248Z" fill="url(#${id}skin)" stroke="${ink}" stroke-width="1.6"/>
+      <path d="M323 222Q337 211 351 215M340 217q-9 10-6 16" fill="none" stroke="#ac6978" stroke-width="1.4"/>`;
+  }
   return '';
 }
 
@@ -134,7 +166,9 @@ export function portrait(character, expression = 'neutral', pose = 'still', warm
   const d = designs[character];
   if (!d) return '';
   const id = `p${++instance}`;
-  const gradient = (name, stops) => `<linearGradient id="${id}${name}" x2=".35" y2="1" gradientUnits="objectBoundingBox">${stops.map((color, i) => `<stop offset="${i / (stops.length - 1)}" stop-color="${color}"/>`).join('')}</linearGradient>`;
+  const gradient = (name, stops) => `<linearGradient id="${id}${name}" x2="35%" y2="100%">${stops.map((color, i) => `<stop offset="${i / (stops.length - 1)}" stop-color="${color}"/>`).join('')}</linearGradient>`;
+  const tilt = { mio: -3, ren: 1, yui: 4, suzu: -1 }[character] + (expression === 'shy' ? 4 : 0);
+  const blush = expression === 'shy' || expression === 'laugh' ? .76 : .43;
   const freckles = character === 'ren' ? '<path d="M147 172h.1m5-2h.1m6 2h.1m75-1h.1m6-2h.1m5 2h.1" stroke="#a56359" stroke-width="2.2" stroke-linecap="round"/>' : '';
   const detail = {
     mio: '<path d="M123 186q-5 17 2 21" stroke="#efc5d5" stroke-width="2" fill="none"/><circle cx="126" cy="208" r="3" fill="#f8d7e1"/>',
@@ -147,7 +181,7 @@ export function portrait(character, expression = 'neutral', pose = 'still', warm
     <defs>
       ${gradient('hair', d.hair)}${gradient('back', [d.hair[0], d.hair[2], ink])}
       ${gradient('skin', d.skin)}${gradient('coat', d.cloth)}
-      <radialGradient id="${id}blush"><stop stop-color="#dc7999" stop-opacity=".54"/><stop offset="1" stop-color="#ea9bad" stop-opacity="0"/></radialGradient>
+      <radialGradient id="${id}blush"><stop stop-color="#dc7999" stop-opacity="${blush}"/><stop offset="1" stop-color="#ea9bad" stop-opacity="0"/></radialGradient>
     </defs>
     <g stroke-linejoin="round" stroke-linecap="round">
       <path d="${d.silhouette}" fill="url(#${id}back)" stroke="${ink}" stroke-width="3"/>
@@ -161,8 +195,9 @@ export function portrait(character, expression = 'neutral', pose = 'still', warm
       <path d="${d.collar}" fill="none" stroke="${d.lining}" stroke-opacity=".44" stroke-width="1.2"/>
       <path d="${d.seam}" fill="none" stroke="#261e31" stroke-opacity=".62" stroke-width="2.4"/>
       <path d="M58 322Q75 293 102 282M287 270Q321 280 338 329M43 474 36 548M355 471 369 547" fill="none" stroke="${d.lining}" stroke-opacity=".42" stroke-width="3"/>
-      ${accessory(d.accessory, d.lining)}
-      ${outfit(d, warm)}
+      ${outfit(character, d, warm)}
+      ${(character !== 'mio' || pose !== 'hold') ? accessory(d.accessory, d.lining) : ''}
+      <g transform="rotate(${tilt} 197 210)">
       <path d="M135 150Q110 135 115 162 119 180 139 183M250 150Q276 135 272 162 270 180 250 183" fill="url(#${id}skin)" stroke="${ink}" stroke-width="1.7"/>
       <path d="M127 120Q133 72 168 66 222 50 255 92 269 108 262 153 259 180 243 199 225 223 198 231 169 229 145 203 130 185 126 157Z" fill="url(#${id}skin)" stroke="${ink}" stroke-width="2"/>
       <path d="M139 137Q162 133 178 144M208 141Q229 135 249 141" stroke="#f4bac4" fill="none" stroke-width="3" opacity=".75"/>
@@ -176,7 +211,8 @@ export function portrait(character, expression = 'neutral', pose = 'still', warm
       <path d="${d.detail}" fill="none" stroke="${d.hair[1]}" stroke-width="2" opacity=".85"/>
       <path d="M111 108Q116 68 155 49M274 86Q291 115 284 143" fill="none" stroke="${d.lining}" stroke-width="2.2" opacity=".5"/>
       ${detail}
-      ${arms(pose, id)}
+      </g>
+      ${arms(pose, id, character)}
     </g>
   </svg>`;
 }

@@ -90,8 +90,10 @@ function hud(state, muted) {
 function scenePortrait(state, scene, current) {
   if (!scene.character) return '';
   const lines = state.reply === null ? scene.lines : scene.choices[state.reply].reply;
-  const spoken = current?.spoken ? current : lines.slice(0, state.line + 1).findLast((entry) => entry.spoken);
-  return portrait(scene.character, spoken?.expression, spoken?.pose, spoken?.warm ?? scene.character === 'suzu');
+  const spoken = (current?.spoken ? current : lines.slice(0, state.line + 1).findLast((entry) => entry.spoken))
+    ?? (state.reply === null ? null : scene.lines.findLast((entry) => entry.spoken));
+  const warm = spoken?.warm ?? (state.scene.kind === 'ending' || state.scene.chapter > 0 || scene.character === 'suzu');
+  return portrait(scene.character, spoken?.expression, spoken?.pose, warm);
 }
 
 export function sceneView(state, mode, muted) {
@@ -102,9 +104,9 @@ export function sceneView(state, mode, muted) {
   const ending = state.scene.kind === 'ending';
   const tag = ending ? '始发 · 终章' : state.scene.kind === 'route' ? `第 ${state.scene.chapter + 1} 幕` : state.scene.kind === 'tower' ? '夜行 · 东京塔' : '序章';
   const remaining = DAWN - state.time;
-  return `<main class="game-screen scene-screen" style="--scene: url('${photo(state.district)}'); --accent: ${heroine?.color ?? 'var(--mint)'}">
+  return `<main class="game-screen scene-screen ${ending ? 'dawn-screen' : ''}" style="--scene: url('${photo(state.district)}'); --accent: ${heroine?.color ?? 'var(--mint)'}">
     ${hud(state, muted)}
-    <div class="scene-heading"><span>${tag}</span><h2>${scene.title}</h2></div>
+    <div class="scene-heading"><span>${tag}</span><h1 tabindex="-1">${scene.title}</h1></div>
     <div class="scene-portrait ${current && !current.spoken ? 'listening' : ''}">${scenePortrait(state, scene, current)}</div>
     <div class="story-deck">
       ${choices.length ? `<section class="dialogue choice-deck" aria-labelledby="choice-title">
@@ -181,13 +183,13 @@ export function mapView(state, selected, muted) {
     </button>`;
   }).join('');
   const wait = dawnOptions(state).map((option) => `<button class="wait-button" data-action="wait" data-id="${option.id}" ${option.walk > remaining ? 'disabled' : ''}>
-    <span>${option.label}</span><small>${option.walk ? `步行 ${option.walk} 分钟 · ` : ''}${remaining > 0 ? `+${remaining} 分钟` : '04:50'}</small>${icon('next')}
+    <span>${option.label}</span><small>${option.walk > remaining ? '始发前无法抵达' : option.walk ? `步行 ${option.walk} 分钟 · 04:50` : '04:50'}</small>${icon('next')}
   </button>`).join('');
   return `<main class="game-screen map-screen" style="--scene: url('${photo(state.district)}')">
     ${hud(state, muted)}
     <section class="map-shell" aria-labelledby="map-title">
       <header class="map-header">
-        <div><p class="map-overline">${icon('pin')} 东京夜行线</p><h1 id="map-title">选择下一站</h1></div>
+        <div><p class="map-overline">${icon('pin')} 东京夜行线</p><h1 id="map-title" tabindex="-1">选择下一站</h1></div>
         <span class="time-chip">${icon('clock')} 距始发 <b>${remaining}</b> 分钟</span>
       </header>
       <div class="map-content">
@@ -201,6 +203,7 @@ export function mapView(state, selected, muted) {
         <div class="map-actions">
           ${local && canVisit ? `<button class="primary local-event" data-action="visit"><span>${district.route ? '与' + heroines[district.route].short + '停留' : '在塔下停留'}<small>${event.title} · ${event.minimum} 分钟起</small></span>${icon('arrow')}</button>` : ''}
           ${local && event && !canVisit ? '<p class="map-hint">始发前的时间已不够停留。</p>' : ''}
+          ${local && !event ? '<p class="map-hint">这里的故事已经读完。可以等始发，或继续走。</p>' : ''}
           ${!local ? `<button class="primary local-event" data-action="walk" data-id="${selected}" ${cost > remaining ? 'disabled' : ''}><span>步行前往<small>${cost > remaining ? '始发前无法抵达' : `+${cost} 分钟 · ${clock(state.time + cost)} 抵达`}</small></span>${icon('arrow')}</button>
           ${event && cost <= remaining ? `<p class="map-hint">${canVisit ? `可停留 · ${event.title}` : '抵达后时间不足，无法停留。'}</p>` : ''}` : ''}
           <div class="wait-list">${wait}</div>
@@ -213,17 +216,18 @@ export function mapView(state, selected, muted) {
 
 export function resultsView(state, muted) {
   const ending = endings[state.ending];
-  return `<main class="game-screen results-screen" style="--scene: url('${photo(state.district)}')">
+  return `<main class="game-screen results-screen dawn-screen" style="--scene: url('${photo(state.district)}')">
     ${hud(state, muted)}
-    <div class="result-art">${ending.character ? portrait(ending.character, 'smile', 'offer', true) : ''}</div>
+    <div class="result-art">${ending.character ? portrait(ending.character, 'tender', 'hold', true) : ''}</div>
     <section class="results-copy">
       <p class="hero-context"><span></span> 04:50 · 夜行结束</p>
       <p class="ending-ja" lang="ja">${ending.ja}</p>
-      <h1>${ending.title}</h1>
+      <h1 tabindex="-1">${ending.title}</h1>
       <p>已收录至回忆画廊</p>
       <div class="title-actions"><button class="primary" data-action="home">回到标题 ${icon('arrow')}</button>
         <button class="secondary" data-action="gallery">${icon('gallery')} 回忆画廊</button>
         <button class="quiet" data-action="log">${icon('book')} 文本记录</button>
+        <button class="quiet" data-action="save-menu">${icon('save')} 存读档</button>
       </div>
     </section>
   </main>`;

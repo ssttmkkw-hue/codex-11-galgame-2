@@ -27,7 +27,9 @@ export function validNight(state) {
   if (!state || state.version !== 1 || !['scene', 'map', 'results'].includes(state.phase)) return false;
   if (!Object.hasOwn(districts, state.district) || !Number.isInteger(state.time) || state.time < START || state.time > DAWN) return false;
   if (!Array.isArray(state.log) || !state.log.every((entry) => entry && typeof entry.text === 'string' && typeof entry.speaker === 'string' && Number.isInteger(entry.time))) return false;
-  if (!Array.isArray(state.districts) || !state.districts.every((id) => Object.hasOwn(districts, id))) return false;
+  if (!Array.isArray(state.districts) || !state.districts.includes(state.district)
+    || !state.districts.every((id) => Object.hasOwn(districts, id))) return false;
+  if (typeof state.towerSeen !== 'boolean' || typeof state.towerMemory !== 'boolean') return false;
   if (state.ending !== null && !Object.hasOwn(endings, state.ending)) return false;
   for (const id of Object.keys(heroines)) {
     const bond = state.bonds?.[id];
@@ -38,18 +40,25 @@ export function validNight(state) {
   const { kind, id, chapter } = state.scene ?? {};
   if (!['prologue', 'tower', 'ending', 'route'].includes(kind)) return false;
   if (kind === 'route' && (!Object.hasOwn(routes, id) || !Number.isInteger(chapter) || !routes[id][chapter])) return false;
-  if (kind === 'ending' && (id !== state.ending || !Object.hasOwn(endings, id))) return false;
-  if (state.phase === 'results' && kind !== 'ending') return false;
+  if (kind === 'ending' && (state.time !== DAWN || id !== state.ending || !Object.hasOwn(endings, id))) return false;
+  if (kind !== 'ending' && (state.ending !== null || state.phase === 'results')) return false;
   if (!Number.isInteger(state.line) || state.line < 0) return false;
   const scene = storyScene(state);
-  if (state.reply === null) return state.line <= scene.lines.length;
+  if (state.phase === 'results') return state.reply === null && state.line === scene.lines.length;
+  if (state.reply === null) return state.line < scene.lines.length || (state.line === scene.lines.length && Boolean(scene.choices?.length));
   const reply = Number.isInteger(state.reply) && scene.choices?.[state.reply]?.reply;
   return Boolean(reply && state.line < reply.length);
 }
 
 export function loadSlot(id) {
   const slot = read(id);
-  return slot && typeof slot.date === 'number' && validNight(slot.state) ? slot : null;
+  if (!slot || !Number.isFinite(slot.date) || !validNight(slot.state)) return null;
+  // Older saves withheld the third-scene promise after two short visits.
+  for (const id of Object.keys(heroines)) {
+    const bond = slot.state.bonds[id];
+    if (bond.chapter === 3 && bond.affection === 5) bond.promise = true;
+  }
+  return slot;
 }
 
 export function saveSlot(id, state) {
@@ -71,7 +80,11 @@ export function loadGallery() {
   const saved = read('gallery') ?? {};
   const seen = Array.isArray(saved.seen) ? saved.seen.filter((id) => Object.hasOwn(heroines, id)) : [];
   const unlocked = Array.isArray(saved.unlocked) ? saved.unlocked.filter((id) => Object.hasOwn(endings, id)) : [];
-  return { seen: [...new Set(seen)], unlocked: [...new Set(unlocked)] };
+  const locations = Object.fromEntries(unlocked.flatMap((id) => {
+    const district = saved.locations?.[id];
+    return Object.hasOwn(districts, district) ? [[id, district]] : [];
+  }));
+  return { seen: [...new Set(seen)], unlocked: [...new Set(unlocked)], locations };
 }
 
 export const saveGallery = (gallery) => write('gallery', gallery);

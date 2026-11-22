@@ -21,7 +21,12 @@ export function storyScene(state) {
   if (kind === 'prologue') return prologue;
   if (kind === 'tower') return towerEvent;
   if (kind === 'route') return { ...routes[id][chapter], character: id, district: heroines[id].district };
-  if (kind === 'ending') return endings[id];
+  if (kind === 'ending') {
+    const ending = endings[id];
+    const bond = state.bonds[id];
+    if (!ending.coda || bond.chapter < routes[id].length) return ending;
+    return { ...ending, lines: [...ending.lines, ...ending.coda] };
+  }
   return null;
 }
 
@@ -70,13 +75,14 @@ export function advance(state) {
 }
 
 export function choose(state, index) {
+  if (!Number.isInteger(index)) return state;
   const choice = currentChoices(state)[index];
   if (!choice || state.time + choice.cost > DAWN) return state;
   const { kind, id, chapter } = state.scene;
   let next = { ...state, time: state.time + choice.cost, line: 0, reply: index };
   if (kind === 'route') {
     const affection = state.bonds[id].affection + choice.affection;
-    const promise = state.bonds[id].promise || (routes[id][chapter].promiseScene === true && choice.affection > 0 && affection >= 6);
+    const promise = state.bonds[id].promise || routes[id][chapter].promiseChoice === index;
     next = { ...next, bonds: { ...state.bonds, [id]: { chapter: chapter + 1, affection, promise } } };
   }
   if (kind === 'tower') next = { ...next, towerSeen: true, towerMemory: index === 0 };
@@ -104,15 +110,19 @@ export function visit(state) {
   return enter(state, { kind, id, chapter });
 }
 
-export function walk(state, to) {
-  if (state.phase !== 'map' || !Object.hasOwn(districts, to)) return state;
-  const cost = walkingTime(state.district, to);
-  if (cost === 0 || state.time + cost > DAWN) return state;
+function arrive(state, to, cost) {
   const next = {
     ...state, district: to, time: state.time + cost,
     districts: state.districts.includes(to) ? state.districts : [...state.districts, to],
   };
   return eventLog(next, `步行抵达${districts[to].name}（+${cost} 分钟）`);
+}
+
+export function walk(state, to) {
+  if (state.phase !== 'map' || !Object.hasOwn(districts, to)) return state;
+  const cost = walkingTime(state.district, to);
+  if (cost === 0 || state.time + cost > DAWN) return state;
+  return arrive(state, to, cost);
 }
 
 export function dawnOptions(state) {
@@ -132,6 +142,8 @@ export function dawnOptions(state) {
 export function waitForDawn(state, id) {
   const option = dawnOptions(state).find((entry) => entry.id === id);
   if (!option || option.walk > option.cost) return state;
-  const next = { ...state, time: DAWN, district: option.district, ending: id };
-  return enter(eventLog(next, option.label), { kind: 'ending', id });
+  const arrived = option.walk ? arrive(state, option.district, option.walk) : state;
+  const wait = DAWN - arrived.time;
+  const next = { ...arrived, time: DAWN, ending: id };
+  return enter(eventLog(next, wait ? `${option.label}（+${wait} 分钟）` : option.label), { kind: 'ending', id });
 }

@@ -19,8 +19,22 @@ let typing = null;
 let readTimer;
 let noticeTimer;
 let panelTrigger;
+let galleryPreview = null;
 
 function soundCue() {
+  if (galleryPreview) {
+    const { id, type } = galleryPreview;
+    const ending = type === 'ending' ? endings[id] : null;
+    music.setCue({
+      district: ending ? memoryDistrict(id) : heroines[id].district,
+      time: ending ? DAWN : START,
+      character: ending ? ending.character : id,
+      affection: 9,
+      mood: ending ? 'ending' : 'scene',
+      ending: ending ? id : null,
+    });
+    return;
+  }
   const scene = state && !isTitle ? storyScene(state) : null;
   const character = scene?.character ?? null;
   music.setCue({
@@ -29,11 +43,19 @@ function soundCue() {
     character,
     affection: character ? state.bonds[character].affection : 0,
     mood: isTitle ? 'title' : state.ending ? 'ending' : state.phase,
+    ending: isTitle ? null : state.ending,
   });
 }
 
 function applyVolume() {
-  music.volume(settings.muted ? 0 : settings.volume / 100);
+  music.volume(settings.muted && !galleryPreview ? 0 : settings.volume / 100);
+}
+
+function stopPreview() {
+  if (!galleryPreview) return;
+  galleryPreview = null;
+  applyVolume();
+  soundCue();
 }
 
 function notify(text) {
@@ -98,12 +120,15 @@ function render({ instant = false, focus = false } = {}) {
   } else {
     app.innerHTML = state.phase === 'map' ? mapView(state, selected, settings.muted) : resultsView(state, settings.muted);
   }
-  if (restore && !panel.open) {
-    const matches = [...app.querySelectorAll('button[data-action]')].filter((button) =>
-      button.dataset.action === restore.action && button.dataset.id === restore.id && !button.disabled);
+  if (!panel.open) {
+    const matches = restore ? [...app.querySelectorAll('button[data-action]')].filter((button) =>
+      button.dataset.action === restore.action && button.dataset.id === restore.id && !button.disabled) : [];
     const match = matches.find((button) => button.className === active.className) ?? matches[0];
     if (match) match.focus({ preventScroll: true });
-    else if (focus) app.querySelector('main h1, .choice:not([disabled]), .next-line')?.focus({ preventScroll: true });
+    else if (focus) {
+      const target = app.querySelector('.choice:not([disabled]), .next-line') ?? app.querySelector('main h1');
+      target?.focus({ preventScroll: true });
+    }
   }
   soundCue();
 }
@@ -122,8 +147,9 @@ function transition(next, instant = false) {
     gallery.seen.push(character);
     saveGallery(gallery);
   }
-  if (state.phase === 'results' && !gallery.unlocked.includes(state.ending)) {
-    gallery.unlocked.push(state.ending);
+  if (state.phase === 'results' && !gallery.locations[state.ending]) {
+    if (!gallery.unlocked.includes(state.ending)) gallery.unlocked.push(state.ending);
+    gallery.locations[state.ending] = state.district;
     if (!saveGallery(gallery)) notify('浏览器无法保存画廊进度。');
   }
   saveSlot('auto', state);
@@ -139,8 +165,9 @@ function home() {
   app.querySelector('[data-action="start"]')?.focus({ preventScroll: true });
 }
 
-function showPanel(title, content) {
+function showPanel(title, content, keepPreview = false) {
   pause();
+  if (!keepPreview) stopPreview();
   if (!panel.open) panelTrigger = document.activeElement;
   panel.innerHTML = `<header class="panel-header"><h2 id="panel-title">${title}</h2><button class="quiet close" data-action="close" aria-label="关闭">${icon('x')}</button></header><div class="panel-body">${content}</div>`;
   if (!panel.open) panel.showModal();
@@ -150,13 +177,13 @@ function showPanel(title, content) {
 function closePanel(restoreFocus = true) {
   if (!panel.open) return;
   panel.close();
-  soundCue();
+  stopPreview();
   scheduleRead();
   if (restoreFocus && panelTrigger?.isConnected) panelTrigger.focus({ preventScroll: true });
 }
 
 function slots(canSave) {
-  const caption = (slot) => `${clock(slot.state.time)} · ${districts[slot.state.district].name} · ${storyScene(slot.state)?.title ?? '夜行地图'}`;
+  const caption = ({ state }) => `${clock(state.time)} · ${districts[state.district].name} · ${storyScene(state)?.title ?? '夜行地图'}`;
   const html = [['auto', '自动存档'], ['slot1', '存档 01'], ['slot2', '存档 02'], ['slot3', '存档 03']].map(([id, label]) => {
     const slot = loadSlot(id);
     const date = slot ? new Date(slot.date).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
@@ -193,11 +220,10 @@ function showLog() {
 }
 
 function showGallery() {
-  soundCue();
   const endingsList = Object.entries(endings).map(([id, ending]) => {
     const unlocked = gallery.unlocked.includes(id);
     return `<button class="memory ${unlocked ? '' : 'locked'}" data-action="memory" data-id="${id}" ${unlocked ? '' : 'disabled'}
-      ${unlocked ? `style="--scene: url('${photo(ending.district ?? 'shibuya')}')"` : ''}>
+      ${unlocked ? `style="--scene: url('${photo(memoryDistrict(id))}')"` : ''}>
       <span>${unlocked ? icon('gallery') : icon('lock')}</span><strong>${unlocked ? ending.title : '尚未解锁'}</strong>
     </button>`;
   }).join('');
@@ -211,25 +237,38 @@ function showGallery() {
     <div class="memory-grid">${endingsList}</div><h3 class="panel-subhead people-heading">夜里遇见的人 <span>${gallery.seen.length} / ${Object.keys(heroines).length}</span></h3><div class="people-grid">${faces}</div>`);
 }
 
+function memoryDistrict(id) {
+  return endings[id].district ?? gallery.locations[id] ?? 'shibuya';
+}
+
+function previewButton(id, type, label) {
+  const playing = galleryPreview?.id === id && galleryPreview.type === type;
+  return `<button class="secondary" data-action="preview" data-id="${id}" data-type="${type}" aria-pressed="${playing}">${icon('music')} ${label}</button>`;
+}
+
 function showPerson(id, variant = 0) {
   if (!gallery.seen.includes(id)) return;
   const person = heroines[id];
-  const looks = [['日常', 'neutral', 'still', false], ['笑容', 'smile', 'still', false], ['惊讶', 'surprise', 'offer', false], ['沉思', 'sad', 'crossed', true], ['下定决心', 'resolve', 'offer', true], ['打趣', 'wry', 'crossed', true]];
+  const looks = [
+    ['日常', 'neutral', 'still', false], ['笑容', 'smile', 'still', false], ['惊讶', 'surprise', 'offer', false],
+    ['沉思', 'sad', 'crossed', true], ['专注', 'resolve', 'hold', true], ['打趣', 'wry', 'crossed', true],
+    ['害羞', 'shy', 'hold', true], ['温柔', 'tender', 'hold', true], ['放声笑', 'laugh', 'wave', true],
+  ];
   const [, expression, pose, warm] = looks[variant];
   showPanel(person.name, `<div class="person-preview" style="--person: ${person.color}; --scene: url('${photo(person.district)}')">${portrait(id, expression, pose, warm)}</div>
     <div class="person-content"><p lang="ja">${person.kana}</p><p><strong>${person.role}</strong> · ${person.bio}</p></div>
     <div class="look-list">${looks.map(([label], i) => `<button class="secondary" data-action="look" data-id="${id}" data-variant="${i}" aria-pressed="${i === variant}">${label}</button>`).join('')}</div>
-    <button class="quiet panel-back" data-action="gallery">${icon('back')} 返回画廊</button>`);
+    <div class="memory-controls"><button class="quiet" data-action="gallery">${icon('back')} 返回画廊</button>
+      ${previewButton(id, 'person', '聆听角色旋律')}</div>`, galleryPreview?.type === 'person' && galleryPreview.id === id);
 }
 
 function showMemory(id) {
   if (!gallery.unlocked.includes(id)) return;
   const ending = endings[id];
-  const district = ending.district ?? 'shibuya';
-  showPanel(ending.title, `<div class="memory-preview" style="--scene: url('${photo(district)}')">${ending.character ? portrait(ending.character, 'smile', 'offer', true) : ''}</div>
+  showPanel(ending.title, `<div class="memory-preview" style="--scene: url('${photo(memoryDistrict(id))}')">${ending.character ? portrait(ending.character, 'tender', 'hold', true) : ''}</div>
     <p class="memory-ja" lang="ja">${ending.ja}</p>
     <div class="memory-controls"><button class="quiet" data-action="gallery">${icon('back')} 返回画廊</button>
-      <button class="secondary" data-action="preview" data-id="${id}" aria-pressed="false">${icon('music')} 聆听结尾曲</button></div>`);
+      ${previewButton(id, 'ending', '聆听结尾曲')}</div>`);
 }
 
 function showDistrict(id) {
@@ -239,7 +278,6 @@ function showDistrict(id) {
 }
 
 function start() {
-  if (loadSlot('auto') && !isTitle) return;
   if (loadSlot('auto')) {
     showPanel('开始新的夜行', `<p class="panel-note">开始后将覆盖自动存档。手动存档会保留。</p><button class="primary" data-action="new-night">开始新的一夜 ${icon('arrow')}</button>`);
     return;
@@ -295,17 +333,16 @@ const actions = {
   preview: (id, button) => {
     if (button.getAttribute('aria-pressed') === 'true') {
       button.setAttribute('aria-pressed', 'false');
-      soundCue();
+      stopPreview();
       return;
     }
-    if (settings.muted) {
-      settings.muted = false;
-      saveSettings(settings);
-      applyVolume();
-      render({ instant: true });
+    if (settings.volume === 0) {
+      notify('音乐音量为零。可以在设置中调高音量。');
+      return;
     }
-    const ending = endings[id];
-    music.setCue({ district: ending.district ?? 'shibuya', time: DAWN, character: ending.character, affection: 9, mood: 'ending' });
+    galleryPreview = { id, type: button.dataset.type };
+    applyVolume();
+    soundCue();
     button.setAttribute('aria-pressed', 'true');
   },
   settings: showSettings,
@@ -347,8 +384,13 @@ document.addEventListener('click', (event) => {
   }
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
-  if (!settings.muted || ['sound', 'preview'].includes(button.dataset.action)) music.start();
-  actions[button.dataset.action]?.(button.dataset.id, button);
+  const action = button.dataset.action;
+  if (action === 'preview' || (action === 'sound' && settings.muted)) {
+    music.start().then((started) => {
+      if (!started) notify('浏览器未能开启声音。');
+    });
+  } else if (!settings.muted && action !== 'sound') music.start();
+  actions[action]?.(button.dataset.id, button);
 });
 
 document.addEventListener('keydown', (event) => {

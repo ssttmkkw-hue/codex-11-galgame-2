@@ -66,7 +66,7 @@ export const routes = {
     },
     {
       title: '一起洗出来',
-      promiseScene: true,
+      promiseChoice: 0,
       lines: [
         line('我约了九点看一间小暗房。没有雇主，也没有约片，就是我自己想去看。', 'resolve', 'hold', true),
         line('如果我拍得很差，可以第一个给你看吗？你不用说好看。', 'shy', 'hold', true),
@@ -88,6 +88,19 @@ export const routes = {
       choices: [
         choice('写下「比末班车晚一点」', 16, 0, line('好。我也要一张空白的，写「比第一班车早一点」。', 'smile', 'hold', true)),
         choice('把拍立得夹进车票一起收好', 8, 0, narration('车票比相纸窄一截，两张叠在一起，正好露出那枚指纹。')),
+      ],
+    },
+    {
+      title: '焦点在这里',
+      requiresPromise: true,
+      lines: [
+        narration('天桥的楼梯上，澪把背包垫在第二级台阶上，让相机可以自己站稳。'),
+        line('我妈拍那张的时候，喊我往左。我以为左边有更好的光。后来才知道，她是想挤进来。', 'tender', 'hold', true),
+        line('这次也给我留一点地方。你站这儿，我去按定时。……あ、待って。你想站哪边？', 'laugh', 'hold', true),
+      ],
+      choices: [
+        choice('站进画面，叫她也别再往边上让', 14, 2, line('听见了。两个人都要留全。那我过来啦。', 'shy', 'wave', true), narration('定时灯连闪三下，澪在最后一下赶到我旁边。')),
+        choice('一起对着玻璃里的倒影试拍', 8, 1, line('这样一来，连我举着相机的手也在里面。好，别动。', 'tender', 'hold', true)),
       ],
     },
   ],
@@ -119,7 +132,7 @@ export const routes = {
     },
     {
       title: '锁门的人',
-      promiseScene: true,
+      promiseChoice: 0,
       lines: [
         line('我订了上野的早饭，七点。地址查好了，还偷偷看过店员几点把蒸笼搬出来。', 'smile', 'still', true),
         line('先声明啊，我只会煮茶泡饭。别指望有人每天给你开店。', 'wry', 'crossed', true),
@@ -142,6 +155,19 @@ export const routes = {
       choices: [
         choice('请莲教我用两罐咖啡和旧店碰杯', 15, 0, line('别敲罐口，里面会溅。碰这儿。……おつかれ、二人とも。', 'smile', 'hold', true)),
         choice('揣一罐在口袋里暖手', 8, 0, line('聪明。反正等到站台上，谁喝了才算谁的。', 'wry', 'crossed', true)),
+      ],
+    },
+    {
+      title: '背面的招牌',
+      requiresPromise: true,
+      lines: [
+        narration('装店门招牌的纸箱已经打好了包。莲把封箱胶带撕开，只够从里面抽出一块木板。'),
+        line('翻过来。第一天试营业，我爸写的是「店主不在」。我在吧台站了一整天，他照样这么写。', 'laugh', 'hold', true),
+        line('那会儿我真生气。今天想想，也许他只是希望我早点出去玩。你有笔吗？', 'tender', 'offer', true),
+      ],
+      choices: [
+        choice('把笔递给莲，请她签上自己的名字和日期', 13, 2, line('好。写完借我一下你肩膀。这块木头比看上去沉。', 'shy', 'hold', true)),
+        choice('替她按住翘起的纸箱边', 8, 1, line('多按十秒。こっち、こっち。行了，到家我再拆一回。', 'resolve', 'hold', true)),
       ],
     },
   ],
@@ -173,7 +199,7 @@ export const routes = {
     },
     {
       title: '按下发送',
-      promiseScene: true,
+      promiseChoice: 0,
       lines: [
         line('我常常把最后一步说成“再做一次测试”。店长已经拿这事写过三次维修备注。', 'wry', 'crossed', true),
         line('这一段我取名叫《给你》。不做第十九次了。', 'resolve', 'hold', true),
@@ -195,6 +221,19 @@ export const routes = {
       choices: [
         choice('请她把三个音高逐个弹出来', 16, 0, line('叮、叮、咚。欸，前两个原来这么接近。比我们刚见面时站得近。', 'smile', 'still', true)),
         choice('把这一版存在她的录音器里', 8, 0, line('存好了。文件名？先用你手机上的名字。', 'wry', 'offer', true)),
+      ],
+    },
+    {
+      title: '左右互换',
+      requiresPromise: true,
+      lines: [
+        narration('结衣把耳机拔出来，录音器的小扬声器立刻发出很轻的风声。'),
+        line('小时候我哥老说我把左右戴反。我当然知道。把另一边扣到床垫里，他就能边写作业边听我的那边。', 'tender', 'hold', true),
+        line('现在可以外放。给我选一个音量？再大一点也行，这条巷子是我们的。', 'laugh', 'wave', true),
+      ],
+      choices: [
+        choice('把音量转过一格，录下我们跟着哼的三音', 14, 2, line('试听通过。第二遍的时候我们再唱齐。第一遍给我留着。', 'shy', 'hold', true)),
+        choice('把录音器放在两个人中间一起听', 8, 1, line('左右声道重叠了。こういうのも、いいね。', 'tender', 'hold', true)),
       ],
     },
   ],
@@ -226,7 +265,7 @@ export const routes = {
     },
     {
       title: '寄给日常',
-      promiseScene: true,
+      promiseChoice: 0,
       lines: [
         narration('铃把信纸折得很小，正好嵌进书的卷首。河对岸一扇窗开了灯。'),
         line('有一页我没有修。我妈折的。想读那里的时候，只要把指头伸进去就可以。', 'smile', 'offer', true),
@@ -249,6 +288,19 @@ export const routes = {
       choices: [
         choice('用书签夹住写了新地址的那一页', 16, 0, line('那下次我就抄好门牌号，请你来喝茶。', 'smile', 'hold', true)),
         choice('替她把书签收进书套', 8, 0, line('好的。借你用的那一份，我先替你收着。', 'smile', 'still', true)),
+      ],
+    },
+    {
+      title: '窗边两把椅子',
+      requiresPromise: true,
+      lines: [
+        narration('书店还没开门。隔着玻璃，铃用手指给我比划她留的位置。'),
+        line('靠窗那把椅子有点矮。我平时给来补书的客人坐高的。今晚可以都试试，看哪把坐着更自在。', 'tender', 'hold', true),
+        line('还有件事。我家窗台上要种薄荷了。おすそ分け、よかったら。等长出新叶，分给你一些。', 'shy', 'wave', true),
+      ],
+      choices: [
+        choice('一起在纸上画出两把椅子和一盆薄荷', 14, 2, line('我会把它留下。下次你来，可以亲手添画一片叶子。', 'laugh', 'hold', true)),
+        choice('约好把舒适的椅子留给先到的人', 8, 1, line('那我也许要早起一点。早上风小，过桥会快一些。', 'tender', 'hold', true)),
       ],
     },
   ],
@@ -277,6 +329,7 @@ export const endings = {
       narration('我伸手托住相机背盖。她没有松手，把额头靠在我的肩膀上等我回答。'),
       line('早上好。おはよう。今天的第一张，给我们拍。', 'smile', 'still', true),
     ],
+    coda: [line('对了，暗房冲出楼梯上那张以后，我想做两份。你也挑一个相框吧。', 'tender', 'hold', true)],
   },
   ren: {
     title: '第二份早点', ja: 'ふたりぶんの朝', district: 'shinjuku', character: 'ren',
@@ -286,6 +339,7 @@ export const endings = {
       narration('她终于把落在我肩上的线头摘掉，又顺手牵住了我的手。'),
       line('早。さ、行こう。走那么快干嘛？这回又不用赶末班。', 'smile', 'offer', true),
     ],
+    coda: [line('我想好了，等会儿把招牌挂到自家厨房。明天换你写。写什么都行，别写“店主不在”。', 'laugh', 'crossed', true)],
   },
   yui: {
     title: '给你的左声道', ja: '左耳に届く朝', district: 'akihabara', character: 'yui',
@@ -295,6 +349,7 @@ export const endings = {
       narration('耳机短得需要靠得很近。她把录音按停，让列车从耳机外面经过。'),
       line('稍等。这个留在现场。……おはよう。你听清了吧，我只说一次。', 'smile', 'still', true),
     ],
+    coda: [line('不过那三个音可以再唱一次。你唱前两个。我走到你左边去。', 'tender', 'hold', true)],
   },
   suzu: {
     title: '折页里的光', ja: '折り目の光', district: 'asakusa', character: 'suzu',
@@ -304,6 +359,7 @@ export const endings = {
       narration('风翻过许多页，最后停在那道旧折痕上。她用指尖压住书页，另一只手握住我的手。'),
       line('おはようございます。可以从这里开始读吗？我们还有一整天。', 'smile', 'still', true),
     ],
+    coda: [line('书里那户人家也养薄荷。念到那里请停一下，我想听听你家窗外有什么。', 'tender', 'hold', true)],
   },
   tower: {
     title: '坂道向晨', ja: '坂道の朝', district: 'tower',

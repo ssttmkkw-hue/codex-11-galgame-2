@@ -1,77 +1,43 @@
-import { DAWN, START } from './story.js';
+import { composeBar } from './score.js';
+import { START } from './story.js';
 
-const D = [50, 57, 61, 66];
-const A = [45, 57, 61, 64];
-const Bm = [47, 57, 62, 66];
-const Fsm = [42, 54, 61, 64];
-const G = [43, 54, 57, 59];
-const Em = [52, 55, 59, 66];
-
-const themes = {
-  shibuya: {
-    bpm: 76, voice: 'piano', chords: [Bm, G, D, A],
-    melody: [[74, 73, 69], [71, 69, 66], [69, 73, 78], [76, 73, 71]],
-    arp: [[.5, 1], [1.5, 2], [2.5, 3], [3.5, 2]], bass: [0, 2.5], drums: 'rim',
-  },
-  shinjuku: {
-    bpm: 83, voice: 'guitar', chords: [Em, A, D, Bm],
-    melody: [[71, 74, 76], [73, 71, 69], [66, 69, 73], [71, 69, 66]],
-    arp: [[.67, 2], [1.67, 1], [2.67, 3], [3.67, 2]], bass: [0, 1.67, 3], drums: 'brush',
-  },
-  akihabara: {
-    bpm: 88, voice: 'bell', chords: [Fsm, G, D, A],
-    melody: [[73, 76, 73], [74, 71, 69], [78, 76, 73], [76, 73, 69]],
-    arp: [[.5, 2], [1, 1], [1.75, 3], [2.5, 2], [3.25, 1]], bass: [0, 1.5, 3], drums: 'tick',
-  },
-  asakusa: {
-    bpm: 66, voice: 'felt', chords: [D, G, Em, A],
-    melody: [[69, 66, 64], [66, 69, 71], [67, 66, 64], [64, 69, 73]],
-    arp: [[.8, 1], [2, 2], [3, 3]], bass: [0, 2.75], drums: 'air',
-  },
-  tower: {
-    bpm: 72, voice: 'glass', chords: [G, D, Em, A],
-    melody: [[67, 71, 74], [73, 69, 66], [67, 71, 76], [76, 73, 69]],
-    arp: [[.5, 2], [1.5, 3], [2.5, 1], [3.5, 2]], bass: [0, 2], drums: 'air',
-  },
+const instruments = {
+  felt: { harmonics: [1, .15, .09, .018], attack: .025, decay: 2.2, release: .16 },
+  electric: { harmonics: [1, .28, .075, .095, .02], attack: .015, decay: 1.65, release: .16 },
+  guitar: { harmonics: [1, .36, .25, .11, .043, .027], attack: .012, decay: 2.25, release: .12 },
+  pluck: { harmonics: [1, .21, .32, .06, .13, .023, .038], attack: .008, decay: 3.75, release: .095 },
+  bell: { harmonics: [1, .135, .025], overtone: [4.012, .15], attack: .013, decay: 2.1, release: .24 },
+  glass: { harmonics: [1, .07, .085], overtone: [2.997, .07], attack: .056, decay: 2.45, release: .32 },
+  flute: { harmonics: [1, .14, .065, .014], attack: .14, sustain: .7, release: .33, vibrato: 2.7 },
+  cello: { harmonics: [1, .56, .38, .19, .11, .065, .043], attack: .21, sustain: .67, release: .32, vibrato: 3.8 },
+  pad: { harmonics: [1, .17, .045], overtone: [1.003, .41], attack: .54, sustain: .67, release: .7 },
+  strings: { harmonics: [1, .36, .25, .075, .038], overtone: [1.004, .36], attack: .39, sustain: .72, release: .58 },
+  bass: { harmonics: [1, .22, .06], attack: .025, decay: 1.35, release: .15 },
 };
 
-const heroineThemes = {
-  mio: { voice: 'felt', chordOrder: [0, 1, 2, 3], motif: [[.25, 74, .78], [1.25, 73, .4], [1.75, 69, 1.65]], reply: [66, 69, 74] },
-  ren: { voice: 'guitar', chordOrder: [0, 1, 3, 2], motif: [[.67, 71, .42], [1.33, 74, .62], [2.17, 76, .8], [3.17, 74, .6]], reply: [73, 69, 66] },
-  yui: { voice: 'bell', chordOrder: [0, 1, 3, 2], motif: [[.25, 73, .35], [.75, 76, .32], [1.25, 73, .65], [2.5, 81, .9]], reply: [74, 71, 69] },
-  suzu: { voice: 'flute', chordOrder: [0, 2, 1, 0], motif: [[.5, 69, 1.3], [2, 66, .72], [3, 64, .8]], reply: [67, 66, 69] },
-};
-
-const synth = {
-  piano: { partials: [[1, 1], [2, .24], [3, .07]], attack: .012, decay: 2.2 },
-  felt: { partials: [[1, 1], [2, .11], [3, .04]], attack: .025, decay: 2.15 },
-  guitar: { partials: [[1, 1], [2, .26], [3, .09], [4, .045]], attack: .014, decay: 1.9 },
-  bell: { partials: [[1, 1], [2, .17], [3, .06], [4.01, .08]], attack: .018, decay: 2.4 },
-  glass: { partials: [[1, 1], [2, .09], [3.002, .06]], attack: .055, decay: 2.8 },
-  flute: { partials: [[1, 1], [2, .12], [3, .06]], attack: .14, sustain: .7, release: .36 },
-  pad: { partials: [[1, 1], [1.002, .35], [2, .12]], attack: .55, sustain: .65, release: .65 },
-  bass: { partials: [[1, 1], [2, .18]], attack: .025, decay: 1.25 },
+const drums = {
+  tick: { length: .044, frequency: 5350, q: .9 },
+  rim: { length: .074, frequency: 1420, q: 5 },
+  brush: { length: .20, frequency: 2860, q: .8 },
+  air: { length: .24, frequency: 2000, q: .7 },
 };
 
 const hz = (note) => 440 * 2 ** ((note - 69) / 12);
-const lerp = (a, b, x) => a + (b - a) * x;
-const beatPattern = [0, 1.5, 2.5];
-const districts = Object.keys(themes);
+const floor = .00001;
+const sectionKey = ({ district, character, ending }) => ending ? `dawn:${ending}` : character ?? district;
 
 export class NightMusic {
   constructor() {
-    this.cue = { district: 'shibuya', character: null, time: START, mood: 'title', affection: 0 };
+    this.cue = { district: 'shibuya', character: null, time: START, mood: 'title', affection: 0, ending: null };
     this.level = .65;
-    this.beat = 0;
-    this.bpm = 76;
-    this.bar = 0;
   }
 
   async start() {
     try {
       if (!this.ctx) this.connect(new (window.AudioContext || window.webkitAudioContext)());
       if (this.ctx.state !== 'running') await this.ctx.resume();
-      if (this.timer === undefined) this.timer = window.setInterval(() => this.schedule(), 50);
+      if (this.timer === undefined) this.timer = window.setInterval(() => this.schedule(), 35);
+      this.schedule();
       return this.ctx.state === 'running';
     } catch {
       return false;
@@ -81,103 +47,145 @@ export class NightMusic {
   connect(ctx) {
     this.ctx = ctx;
     this.master = ctx.createGain();
-    this.master.gain.value = this.level ** 1.45 * .65;
+    this.master.gain.value = this.level ** 1.4 * .8;
     const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -22;
-    limiter.knee.value = 20;
+    limiter.threshold.value = -19;
+    limiter.knee.value = 16;
     limiter.ratio.value = 3;
     this.master.connect(limiter).connect(ctx.destination);
-    const room = ctx.createConvolver();
-    room.buffer = ctx.createBuffer(2, Math.floor(ctx.sampleRate * 1.65), ctx.sampleRate);
+
+    this.room = ctx.createConvolver();
+    const response = ctx.createBuffer(2, Math.floor(ctx.sampleRate * 1.85), ctx.sampleRate);
     for (let channel = 0; channel < 2; channel++) {
-      const samples = room.buffer.getChannelData(channel);
+      const samples = response.getChannelData(channel);
       let seed = 62417 * (channel + 1);
-      for (let i = 0; i < samples.length; i++) {
+      const preDelay = Math.floor(ctx.sampleRate * (.024 + .007 * channel));
+      for (let i = preDelay; i < samples.length; i++) {
         seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-        samples[i] = (seed / 2147483648 - 1) * (1 - i / samples.length) ** 3;
+        samples[i] = (seed / 2147483648 - 1) * (1 - i / samples.length) ** 3.4;
       }
     }
+    this.room.buffer = response;
     const wet = ctx.createGain();
-    wet.gain.value = .2;
-    room.connect(wet).connect(this.master);
-    this.tracks = Object.fromEntries(districts.map((id) => {
-      const bus = ctx.createGain();
-      bus.gain.value = id === this.cue.district ? 1 : 0;
-      bus.connect(this.master);
-      bus.connect(room);
-      return [id, bus];
-    }));
+    wet.gain.value = .24;
+    this.room.connect(wet).connect(this.master);
+
+    this.waves = Object.fromEntries(Object.entries(instruments).map(([voice, { harmonics }]) => [
+      voice, ctx.createPeriodicWave(new Float32Array(harmonics.length + 1), Float32Array.of(0, ...harmonics)),
+    ]));
     this.noise = ctx.createBuffer(1, Math.floor(ctx.sampleRate * .3), ctx.sampleRate);
     const noise = this.noise.getChannelData(0);
     for (let i = 0; i < noise.length; i++) noise[i] = Math.random() * 2 - 1;
-    this.next = ctx.currentTime + .08;
-    this.active = this.cue;
-  }
-
-  volume(level) {
-    this.level = level;
-    if (!this.ctx) return;
-    this.master.gain.setTargetAtTime(level ** 1.45 * .65, this.ctx.currentTime, .09);
+    this.next = ctx.currentTime + .065;
   }
 
   setCue(cue) {
     this.cue = cue;
   }
 
-  tone(bus, voice, note, at, length, level, pan = 0) {
+  volume(level) {
+    this.level = level;
+    if (!this.ctx) return;
+    this.master.gain.setTargetAtTime(level ** 1.4 * .8, this.ctx.currentTime, .065);
+  }
+
+  changeSection(at, key) {
+    const old = this.section;
+    if (old) {
+      old.bus.gain.setTargetAtTime(0, at, .105);
+      // Any already scheduled note releases safely through the reverb.
+      window.setTimeout(() => {
+        old.filter.disconnect();
+        old.bus.disconnect();
+      }, 1900);
+    }
+    const bus = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = .22;
+    filter.frequency.value = 7200;
+    bus.gain.setValueAtTime(0, at);
+    bus.gain.linearRampToValueAtTime(1, at + (old ? .21 : .11));
+    filter.connect(bus);
+    bus.connect(this.master);
+    bus.connect(this.room);
+    this.section = { key, filter, bus, bar: 0, beat: 0, bpm: old?.bpm };
+  }
+
+  tone(bus, { voice, pitch, length, volume, pan }, at, beatLength) {
     const ctx = this.ctx;
-    const { partials, attack, decay, release = .09, sustain } = synth[voice];
-    const duration = Math.max(.11, length);
+    const instrument = instruments[voice];
+    const { attack, sustain, decay, release, overtone, vibrato } = instrument;
+    const duration = Math.max(attack + .075, length * beatLength);
     const finish = at + duration + release;
     const amp = ctx.createGain();
-    amp.gain.setValueAtTime(.00003, at);
-    amp.gain.exponentialRampToValueAtTime(level, at + attack);
+    amp.gain.setValueAtTime(floor, at);
+    amp.gain.exponentialRampToValueAtTime(volume, at + attack);
     if (sustain) {
-      const hold = at + Math.max(duration, attack + .03);
-      amp.gain.exponentialRampToValueAtTime(level * sustain, hold);
-      amp.gain.exponentialRampToValueAtTime(.00003, hold + release);
+      amp.gain.exponentialRampToValueAtTime(volume * sustain, at + Math.min(duration, attack + .22));
+      amp.gain.setValueAtTime(volume * sustain, at + duration);
     } else {
-      const tail = Math.max(at + attack + .025, finish);
-      amp.gain.exponentialRampToValueAtTime(Math.max(.00004, level * Math.exp(-duration * decay)), tail - .055);
-      amp.gain.exponentialRampToValueAtTime(.00003, tail);
+      amp.gain.exponentialRampToValueAtTime(Math.max(floor * 2, volume * Math.exp(-duration * decay)), at + duration);
     }
+    amp.gain.exponentialRampToValueAtTime(floor, finish);
+
     const stereo = ctx.createStereoPanner();
     stereo.pan.value = pan;
     amp.connect(stereo).connect(bus);
-    const stop = sustain ? at + Math.max(duration, attack + .03) + release : finish;
-    partials.forEach(([multiple, weight], index) => {
-      const osc = ctx.createOscillator();
+    const oscillator = ctx.createOscillator();
+    oscillator.setPeriodicWave(this.waves[voice]);
+    oscillator.frequency.value = hz(pitch);
+    oscillator.connect(amp);
+    oscillator.start(at);
+    oscillator.stop(finish + .015);
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      amp.disconnect();
+      stereo.disconnect();
+    };
+    if (overtone) {
+      const shimmer = ctx.createOscillator();
       const mix = ctx.createGain();
-      osc.frequency.value = hz(note) * multiple;
-      mix.gain.value = weight;
-      if (index > 0 && !sustain) mix.gain.setTargetAtTime(weight * .1, at + attack, .18 / index);
-      osc.connect(mix).connect(amp);
-      osc.start(at);
-      osc.stop(stop + .03);
-      osc.onended = () => {
-        osc.disconnect();
+      shimmer.frequency.value = hz(pitch) * overtone[0];
+      mix.gain.setValueAtTime(overtone[1], at);
+      if (!sustain) mix.gain.setTargetAtTime(.001, at + attack, .33);
+      shimmer.connect(mix).connect(amp);
+      shimmer.start(at);
+      shimmer.stop(finish);
+      shimmer.onended = () => {
+        shimmer.disconnect();
         mix.disconnect();
-        if (index === partials.length - 1) {
-          amp.disconnect();
-          stereo.disconnect();
-        }
       };
-    });
+    }
+    if (vibrato) {
+      const lfo = ctx.createOscillator();
+      const depth = ctx.createGain();
+      lfo.frequency.value = 4.8;
+      depth.gain.setValueAtTime(0, at);
+      depth.gain.setTargetAtTime(vibrato, at + attack, .18);
+      lfo.connect(depth).connect(oscillator.detune);
+      lfo.start(at);
+      lfo.stop(finish);
+      lfo.onended = () => {
+        lfo.disconnect();
+        depth.disconnect();
+      };
+    }
   }
 
-  drum(bus, style, at, level) {
+  drum(bus, { style, volume }, at) {
     const ctx = this.ctx;
+    const { length, frequency, q } = drums[style];
     const source = ctx.createBufferSource();
     source.buffer = this.noise;
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.value = { brush: 2800, rim: 1100, tick: 4800, air: 1900 }[style];
-    filter.Q.value = style === 'rim' ? 4 : 1.3;
-    const length = { brush: .14, rim: .055, tick: .035, air: .18 }[style];
+    filter.frequency.value = frequency;
+    filter.Q.value = q;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(.0001, at);
-    gain.gain.linearRampToValueAtTime(level, at + .012);
-    gain.gain.exponentialRampToValueAtTime(.0001, at + length);
+    gain.gain.setValueAtTime(floor, at);
+    gain.gain.linearRampToValueAtTime(volume, at + .01);
+    gain.gain.exponentialRampToValueAtTime(floor, at + length);
     source.connect(filter).connect(gain).connect(bus);
     source.start(at);
     source.stop(at + length);
@@ -189,77 +197,36 @@ export class NightMusic {
   }
 
   schedule() {
-    const ctx = this.ctx;
-    if (ctx.state !== 'running') return;
-    const now = ctx.currentTime;
-    if (this.next < now) {
-      this.next = now + .06;
-      this.beat = 0;
-    }
-    if (this.next > now + .16) return;
+    if (this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    if (this.next < now) this.next = now + .05;
 
-    if (this.beat === 0) {
-      const leaving = this.active.district !== this.cue.district;
-      if (leaving || this.active.mood !== this.cue.mood || this.active.character !== this.cue.character) this.bar = 0;
-      if (leaving) {
-        for (const id of districts) this.tracks[id].gain.setTargetAtTime(id === this.cue.district ? 1 : 0, this.next, .48);
-      }
-      this.active = this.cue;
-      this.playBar(this.next);
-      this.bar += 1;
-      this.next += this.barDuration;
+    // Schedule one beat at a time so scene changes can crossfade on the pulse.
+    while (this.next <= now + .14) {
+      this.next += this.playBeat(this.next);
     }
   }
 
-  playBar(at) {
-    const { district, character, mood, time, affection } = this.active;
-    const theme = themes[district];
-    const finale = mood === 'ending';
-    const motif = heroineThemes[character];
-    const progress = (time - START) / (DAWN - START);
-    const targetBpm = theme.bpm - 6 * progress - (finale ? 6 : 0);
-    this.bpm = lerp(this.bpm, targetBpm, .38);
-    const beat = 60 / this.bpm;
-    this.barDuration = 4 * beat;
-    const bar = this.bar % 4;
-    const bus = this.tracks[district];
-    const chord = finale && motif ? theme.chords[motif.chordOrder[bar]] : theme.chords[bar];
-    const note = (voice, pitch, offset, length, volume, pan) =>
-      this.tone(bus, voice, pitch, at + offset * beat, length * beat, volume, pan);
-    const intimate = mood === 'scene' && Boolean(motif);
-    const closeness = Math.min(1, affection / 9);
-
-    chord.slice(1).forEach((pitch, i) => {
-      note('pad', pitch, i * .07, 3.65, .025 + progress * .012, (i - 1) * .4);
-      if (finale) note('pad', pitch - 12, i * .07, 3.65, .016, (1 - i) * .48);
-    });
-    for (const [i, offset] of theme.bass.entries()) {
-      note('bass', i === 0 ? chord[0] : chord[1] - 12, offset, 1.25, i === 0 ? .13 : .065, -.04);
-    }
-    for (const [i, [offset, degree]] of theme.arp.entries()) {
-      note(theme.voice, chord[degree] + (i % 2 === 0 ? 12 : 0), offset, 1.24, intimate ? .034 : .061, i % 2 ? .36 : -.34);
-    }
-    if (!finale) {
-      const drumLevel = (intimate ? .027 : .06) * (1 - progress * .58);
-      for (const offset of [1, 3]) this.drum(bus, theme.drums, at + offset * beat, drumLevel);
+  playBeat(at) {
+    const key = sectionKey(this.cue);
+    if (key !== this.section?.key) this.changeSection(at, key);
+    const section = this.section;
+    if (section.beat === 0) {
+      const { events, bpm, brightness } = composeBar(this.cue, section.bar);
+      section.bpm = section.bpm ? section.bpm + (bpm - section.bpm) * .58 : bpm;
+      section.events = events;
+      section.filter.frequency.setTargetAtTime(brightness, at, .4);
     }
 
-    if (motif && (intimate || finale)) {
-      const level = finale ? .13 : .075 + .042 * closeness;
-      if (bar === 0 || bar === 2) {
-        for (const [offset, pitch, length] of motif.motif) {
-          const variation = bar === 2 && offset >= 1.75 ? -2 : 0;
-          note(motif.voice, pitch + variation, offset, length, level, .08);
-        }
-      } else {
-        motif.reply.forEach((pitch, i) => note(motif.voice, pitch, beatPattern[i], i === 2 ? 1.3 : .74, level * .89, .08));
-      }
-      if (finale || closeness > .48) note('glass', chord[bar === 3 ? 1 : 2] + 12, 3.12, 1.3, .046, -.44);
-    } else {
-      theme.melody[bar].forEach((pitch, i) => {
-        const voice = finale ? 'flute' : theme.voice;
-        note(voice, pitch, beatPattern[i] + (district === 'shinjuku' ? .16 : .02), i === 2 ? 1.36 : .78, .085, .12);
-      });
+    const beatLength = 60 / section.bpm;
+    for (const event of section.events) {
+      if (Math.floor(event.offset) !== section.beat) continue;
+      const start = at + (event.offset - section.beat) * beatLength;
+      if (event.style) this.drum(section.filter, event, start);
+      else this.tone(section.filter, event, start, beatLength);
     }
+    section.beat = (section.beat + 1) % 4;
+    if (section.beat === 0) section.bar += 1;
+    return beatLength;
   }
 }
