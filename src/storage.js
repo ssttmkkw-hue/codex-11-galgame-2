@@ -1,5 +1,5 @@
 import { DAWN, START, districts, endings, heroines, routes } from './story.js';
-import { storyScene } from './game.js';
+import { ORIGINAL_ROUTE_LENGTH, storyScene } from './game.js';
 
 const key = 'shihatsu.v1.';
 export const defaults = { volume: 65, speed: 24, auto: 3.2, muted: false };
@@ -24,7 +24,8 @@ function write(name, value) {
 }
 
 export function validNight(state) {
-  if (!state || state.version !== 1 || !['scene', 'map', 'results'].includes(state.phase)) return false;
+  if (!state || ![1, 2].includes(state.version) || !['scene', 'map', 'results'].includes(state.phase)) return false;
+  const legacy = state.version === 1;
   if (!Object.hasOwn(districts, state.district) || !Number.isInteger(state.time) || state.time < START || state.time > DAWN) return false;
   if (!Array.isArray(state.log) || !state.log.every((entry) => entry && typeof entry.text === 'string' && typeof entry.speaker === 'string' && Number.isInteger(entry.time))) return false;
   if (!Array.isArray(state.districts) || !state.districts.includes(state.district)
@@ -33,15 +34,19 @@ export function validNight(state) {
   if (state.ending !== null && !Object.hasOwn(endings, state.ending)) return false;
   for (const id of Object.keys(heroines)) {
     const bond = state.bonds?.[id];
-    if (!bond || !Number.isInteger(bond.chapter) || bond.chapter < 0 || bond.chapter > routes[id].length
-      || !Number.isInteger(bond.affection) || typeof bond.promise !== 'boolean') return false;
+    if (!bond || !Number.isInteger(bond.chapter) || bond.chapter < 0 || bond.chapter > (legacy ? ORIGINAL_ROUTE_LENGTH : routes[id].length)
+      || !Number.isInteger(bond.affection) || bond.affection < 0 || typeof bond.promise !== 'boolean'
+      || (!legacy && typeof bond.followUp !== 'boolean')
+      || (bond.followUp && (!bond.promise || bond.chapter <= ORIGINAL_ROUTE_LENGTH))) return false;
   }
   if (state.phase === 'map') return state.scene === null && state.ending === null;
   const { kind, id, chapter } = state.scene ?? {};
   if (!['prologue', 'tower', 'ending', 'route'].includes(kind)) return false;
-  if (kind === 'route' && (!Object.hasOwn(routes, id) || !Number.isInteger(chapter) || !routes[id][chapter])) return false;
+  if (kind === 'route' && (!Object.hasOwn(routes, id) || !Number.isInteger(chapter) || !routes[id][chapter]
+    || (legacy && chapter >= ORIGINAL_ROUTE_LENGTH))) return false;
   if (kind === 'ending' && (state.time !== DAWN || id !== state.ending || !Object.hasOwn(endings, id))) return false;
   if (kind !== 'ending' && (state.ending !== null || state.phase === 'results')) return false;
+  if (kind === 'ending' && endings[id].rendezvous && (legacy || !state.bonds[endings[id].character].followUp)) return false;
   if (!Number.isInteger(state.line) || state.line < 0) return false;
   const scene = storyScene(state);
   if (state.phase === 'results') return state.reply === null && state.line === scene.lines.length;
@@ -53,10 +58,15 @@ export function validNight(state) {
 export function loadSlot(id) {
   const slot = read(id);
   if (!slot || !Number.isFinite(slot.date) || !validNight(slot.state)) return null;
-  // Older saves withheld the third-scene promise after two short visits.
-  for (const id of Object.keys(heroines)) {
-    const bond = slot.state.bonds[id];
-    if (bond.chapter === 3 && bond.affection === 5) bond.promise = true;
+  const { state } = slot;
+  if (state.version === 1) {
+    state.version = 2;
+    for (const bond of Object.values(state.bonds)) {
+      // The original release could withhold a valid third-scene promise.
+      if (bond.chapter === 3 && bond.affection === 5) bond.promise = true;
+      bond.followUp = false;
+    }
+    if (state.phase === 'results') state.line = storyScene(state).lines.length;
   }
   return slot;
 }
@@ -84,7 +94,8 @@ export function loadGallery() {
     const district = saved.locations?.[id];
     return Object.hasOwn(districts, district) ? [[id, district]] : [];
   }));
-  return { seen: [...new Set(seen)], unlocked: [...new Set(unlocked)], locations };
+  const codas = Array.isArray(saved.codas) ? saved.codas.filter((id) => unlocked.includes(id) && endings[id].coda) : [];
+  return { seen: [...new Set(seen)], unlocked: [...new Set(unlocked)], locations, codas: [...new Set(codas)] };
 }
 
 export const saveGallery = (gallery) => write('gallery', gallery);

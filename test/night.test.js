@@ -4,7 +4,7 @@ import {
   advance, availableScene, choose, currentLine, dawnOptions, newNight, storyScene, visit, waitForDawn, walk,
 } from '../src/game.js';
 import { loadSlot, validNight } from '../src/storage.js';
-import { DAWN, districts, heroines, routes } from '../src/story.js';
+import { DAWN, districts, endings, heroines, routes } from '../src/story.js';
 
 function readScene(state) {
   while (state.phase === 'scene' && currentLine(state)) state = advance(state);
@@ -22,6 +22,18 @@ function decision(state, index) {
 }
 
 const start = () => decision(newNight(), 0);
+
+function mockSavedNight(context, state) {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  context.after(() => {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+  });
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: { getItem: () => JSON.stringify({ date: 1, state }) },
+  });
+}
 
 test('the clock budgets every encounter and cannot fit four introductions', () => {
   function mostMeetings(state, met = new Set()) {
@@ -55,36 +67,60 @@ test('each heroine can be promised dawn on the shortest path to her commitment',
   }
 });
 
-test('every optional final scene fits in the night and adds an ending line', () => {
+test('all six scenes fit for every heroine and the last choice can unlock an alternate ending', () => {
   for (const [id, heroine] of Object.entries(heroines)) {
     let state = start();
     if (state.district !== heroine.district) state = walk(state, heroine.district);
-    for (const option of [0, 0, 0, 0, 0]) {
-      state = decision(visit(state), option);
+    for (const scene of routes[id].slice(0, 5)) {
+      assert.equal(availableScene(state).title, scene.title);
+      state = decision(visit(state), 0);
     }
 
+    const alternate = `${id}After`;
+    assert.equal(waitForDawn(state, alternate), state);
+    const original = waitForDawn(state, id);
+    assert.ok(storyScene(original).lines.includes(endings[id].coda[0]));
+    assert.equal(waitForDawn(decision(visit(state), 1), alternate).phase, 'map');
+
+    state = decision(visit(state), 0);
     assert.equal(state.bonds[id].chapter, routes[id].length);
-    const ending = waitForDawn(state, id);
-    assert.ok(storyScene(ending).lines.includes(storyScene(ending).coda[0]));
-    assert.equal(readScene(ending).phase, 'results');
+    const ending = readScene(waitForDawn(state, alternate));
+    assert.equal(ending.ending, alternate);
+    assert.equal(ending.phase, 'results');
+    assert.equal(waitForDawn(state, id).ending, id);
   }
 });
 
 test('a legacy save restores a commitment made after two short visits', (context) => {
   let state = start();
   for (const option of [1, 1, 0]) state = decision(visit(state), option);
+  state.version = 1;
   state.bonds.mio.promise = false;
-  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
-  context.after(() => {
-    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
-    else delete globalThis.localStorage;
-  });
-  Object.defineProperty(globalThis, 'localStorage', {
-    configurable: true,
-    value: { getItem: () => JSON.stringify({ date: 1, state }) },
-  });
+  mockSavedNight(context, state);
   const saved = loadSlot('slot1').state;
+  assert.equal(saved.version, 2);
   assert.equal(waitForDawn(saved, 'mio').ending, 'mio');
+});
+
+test('legacy endings retain their reading position and completed results load with new lines', (context) => {
+  let state = start();
+  for (let chapter = 0; chapter < 5; chapter++) state = decision(visit(state), 0);
+  state.version = 1;
+  for (const bond of Object.values(state.bonds)) delete bond.followUp;
+  let ending = waitForDawn(state, 'mio');
+  const legacy = { ...ending };
+  mockSavedNight(context, legacy);
+  while (currentLine(ending) !== endings.mio.coda[0]) ending = advance(ending);
+  Object.assign(legacy, ending);
+  const resumed = loadSlot('slot1').state;
+  assert.equal(currentLine(resumed), endings.mio.coda[0]);
+  assert.equal(currentLine(advance(resumed)), endings.mio.after[0]);
+
+  Object.assign(legacy, readScene(ending));
+  const completed = loadSlot('slot1').state;
+  assert.equal(completed.phase, 'results');
+  assert.equal(completed.line, storyScene(completed).lines.length);
+  assert.ok(validNight(completed));
 });
 
 test('a remote rendezvous charges and records the walk before dawn', () => {

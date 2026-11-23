@@ -103,6 +103,20 @@ export const routes = {
         choice('一起对着玻璃里的倒影试拍', 8, 1, line('这样一来，连我举着相机的手也在里面。好，别动。', 'tender', 'hold', true)),
       ],
     },
+    {
+      title: '显影盘里还空着',
+      requiresPromise: true,
+      lines: [
+        narration('澪把看暗房的地址抄了两份。她那张剪掉了一角，我这张还完整。'),
+        line('以前别人问我会不会拍照，我都说我会修。那两个字说得好快，根本来不及害怕。', 'uneasy', 'reflect', true),
+        narration('我说，白天寄走工牌的时候，快递单上也问我做什么。我照着工牌填完，才想起那份工作已经结束了。'),
+        line('你愿意陪我进去吗？也许第一张洗出来的只有一片灰。我们可以拿一张废纸，在旁边记下是怎么弄错的。', 'hopeful', 'offer', true),
+      ],
+      choices: [
+        { ...choice('答应陪她进暗房，一起洗第一张', 12, 2, line('那我带两条围裙。黑的给你，另一条我总算找到理由拆封了。', 'relieved', 'hold', true)), followUp: true },
+        choice('请她先独自看看，约好在站前拍照', 7, 0, line('好啊。有一扇门我想自己推。推完了就回站前找你。', 'relieved', 'still', true)),
+      ],
+    },
   ],
   ren: [
     {
@@ -170,6 +184,19 @@ export const routes = {
         choice('替她按住翘起的纸箱边', 8, 1, line('多按十秒。こっち、こっち。行了，到家我再拆一回。', 'resolve', 'hold', true)),
       ],
     },
+    {
+      title: '一把备用钥匙',
+      requiresPromise: true,
+      lines: [
+        narration('莲从钥匙圈上挑下一把没配齿的小铜片，摊在手心给我看。'),
+        line('我爸第一次带我来，说有把备用的。其实他只是想给我一件响起来像钥匙的东西。', 'nostalgic', 'offer', true),
+        line('我想从早饭店给接手的人写张纸条。后门最下面那块木板会进水，她开店第一天用不着自己发现。你陪我写吗？', 'hopeful', 'hold', true),
+      ],
+      choices: [
+        { ...choice('约好吃完早饭一起送交接信', 12, 2, line('好。写完我还想问她，改天能不能来坐一回第六把椅子。', 'relieved', 'offer', true)), followUp: true },
+        choice('把铜片还给她，约好只管吃早饭', 7, 0, line('成交。两笼都上来之前，我一句开店的话都不讲。', 'laugh', 'crossed', true)),
+      ],
+    },
   ],
   yui: [
     {
@@ -234,6 +261,19 @@ export const routes = {
       choices: [
         choice('把音量转过一格，录下我们跟着哼的三音', 14, 2, line('试听通过。第二遍的时候我们再唱齐。第一遍给我留着。', 'shy', 'hold', true)),
         choice('把录音器放在两个人中间一起听', 8, 1, line('左右声道重叠了。こういうのも、いいね。', 'tender', 'hold', true)),
+      ],
+    },
+    {
+      title: '一分钟，原样保留',
+      requiresPromise: true,
+      lines: [
+        narration('录音器弹出“空间不足”。结衣把拇指悬在删除键上，屏幕列着十七段几乎一模一样的测试。'),
+        line('我以为总会有一个完美版本。其实这十七次里，每次跑掉的东西都不一样。', 'uneasy', 'hold', true),
+        line('我想做一份可以寄给别人听的夜间地图。留一分钟给这里？就从我按键的咔哒声开始。', 'hopeful', 'offer', true),
+      ],
+      choices: [
+        { ...choice('留下原声，约好用始发车补完这份地图', 12, 2, line('行，你报地点，我按键。卡壳也接着说，我们的地图可以有死胡同。', 'relieved', 'hold', true)), followUp: true },
+        choice('请她把剩下的一分钟留给自己', 7, 0, line('那我留给自己。要是哪天忘了这里长什么样，就从这声咔哒开始找。', 'tender', 'hold', true)),
       ],
     },
   ],
@@ -303,6 +343,19 @@ export const routes = {
         choice('约好把舒适的椅子留给先到的人', 8, 1, line('那我也许要早起一点。早上风小，过桥会快一些。', 'tender', 'hold', true)),
       ],
     },
+    {
+      title: '信封上的空行',
+      requiresPromise: true,
+      lines: [
+        narration('铃用袖子擦去栏杆上的水，把信和一枚没有盖过戳的邮票摆在一起。'),
+        line('我一直没写收信人。写我妈的名字，邮差不知道怎么送。写我自己，我又怕到时拆开会哭。', 'uneasy', 'reflect', true),
+        line('要不寄到书店？我在那里有一把裁纸刀，也有一把空椅子。等信到了，你愿意坐过来吗？', 'hopeful', 'offer', true),
+      ],
+      choices: [
+        { ...choice('答应陪她寄出这封信，等它回到书店', 12, 2, line('那我写自己的名字。邮差上次把“铃”读作“玲”，这次我把偏旁写清楚一点。', 'relieved', 'hold', true)), followUp: true },
+        choice('把邮票收进折页，约好先去读书', 7, 0, line('好。等我想寄的时候，它也还在这里。', 'tender', 'hold', true)),
+      ],
+    },
   ],
 };
 
@@ -323,6 +376,7 @@ export const towerEvent = {
 export const endings = {
   mio: {
     title: '曝光之前', ja: 'シャッターの前に', district: 'shibuya', character: 'mio',
+    summary: '她把清晨的第一张底片留给了你们。',
     lines: [
       narration('四点五十分。始发列车的灯从桥下滑过去。澪扬起相机，对着还没开店的早餐铺。'),
       line('我把新一卷装反了。猜猜看，这次我用了几秒才承认？', 'wry', 'offer', true),
@@ -330,9 +384,15 @@ export const endings = {
       line('早上好。おはよう。今天的第一张，给我们拍。', 'smile', 'still', true),
     ],
     coda: [line('对了，暗房冲出楼梯上那张以后，我想做两份。你也挑一个相框吧。', 'tender', 'hold', true)],
+    after: [
+      narration('开早餐铺的人把门推开，看我们还挨在一起，以为是忘了带伞，便从门后递来一把。'),
+      line('谢谢。那借我们用一分钟？我想用里面的白色挡一下光。', 'hopeful', 'offer', true),
+      narration('我撑开伞，站回她指给我的位置。这一次，澪在按下快门之前先走了过来。'),
+    ],
   },
   ren: {
     title: '第二份早点', ja: 'ふたりぶんの朝', district: 'shinjuku', character: 'ren',
+    summary: '两笼包子上桌，莲第一次坐在等饭的那一边。',
     lines: [
       narration('四点五十分。车站通道里第一台扶梯启动了。莲把钥匙放进交接用的信封，拇指在封口压了一遍。'),
       line('等我吃完，我要给自己放假。我爸以前说，休店那天也算一天。', 'neutral', 'offer', true),
@@ -340,9 +400,15 @@ export const endings = {
       line('早。さ、行こう。走那么快干嘛？这回又不用赶末班。', 'smile', 'offer', true),
     ],
     coda: [line('我想好了，等会儿把招牌挂到自家厨房。明天换你写。写什么都行，别写“店主不在”。', 'laugh', 'crossed', true)],
+    after: [
+      narration('七点过两分，店员掀开蒸笼。莲习惯性地伸手去端，手到一半，又缩了回来。'),
+      line('原来坐着等别人端过来，手会不知道放哪儿。让我练习一会儿。', 'relieved', 'still', true),
+      narration('她把手放在桌上，掌心朝上。我把筷子递过去，过了一会儿，才想起来她可能没在等筷子。'),
+    ],
   },
   yui: {
     title: '给你的左声道', ja: '左耳に届く朝', district: 'akihabara', character: 'yui',
+    summary: '第一班车驶进秋叶原时，结衣留了一声只说给你听的早安。',
     lines: [
       narration('四点五十分。站台风吹响了防护网。结衣哥哥回了三个字：收到啦。后面另附一段录音。'),
       line('他买了个新碗。音色比原来亮。', 'surprise', 'offer', true),
@@ -350,9 +416,14 @@ export const endings = {
       line('稍等。这个留在现场。……おはよう。你听清了吧，我只说一次。', 'smile', 'still', true),
     ],
     coda: [line('不过那三个音可以再唱一次。你唱前两个。我走到你左边去。', 'tender', 'hold', true)],
+    after: [
+      narration('上车以后，她在通话框里打了半天字，最后回给哥哥一张窗外的照片。画面左边全是我的袖子。'),
+      line('他说下次可以直接打电话。那我下次就不带机器了。耳机还是要带的，我答应过给你一边。', 'relieved', 'hold', true),
+    ],
   },
   suzu: {
     title: '折页里的光', ja: '折り目の光', district: 'asakusa', character: 'suzu',
+    summary: '书店开门之后，书页从你们一起压住的地方往下读。',
     lines: [
       narration('四点五十分。第一班车从河另一侧开出去，把桥底照亮了一瞬。铃把书摊在我们之间。'),
       line('我在地址下面又加了一行。“如果春天来，请在门口稍等一下。”', 'neutral', 'offer', true),
@@ -360,21 +431,90 @@ export const endings = {
       line('おはようございます。可以从这里开始读吗？我们还有一整天。', 'smile', 'still', true),
     ],
     coda: [line('书里那户人家也养薄荷。念到那里请停一下，我想听听你家窗外有什么。', 'tender', 'hold', true)],
+    after: [
+      narration('店主来开门时给我们提了水壶。铃试了低一点的椅子，坐下以后刚好能看见我的眼睛。'),
+      line('我读到句号会停一停。你想说什么，就在我换气的时候说。', 'hopeful', 'hold', true),
+      narration('窗外，第一艘清早的船正从桥下经过。铃念完第一句，果然停了下来。'),
+    ],
   },
   tower: {
     title: '坂道向晨', ja: '坂道の朝', district: 'tower',
+    summary: '我沿着折过的通勤图走下坡，在面包店的绿灯前停了一次。',
     lines: [
       narration('四点五十分。远处第一班车已经开动，东京塔在天光里显出一格一格的钢骨。'),
       narration('我拿出那张画过的通勤图，把「公司」那一站沿虚线折到背面。'),
       narration('坡底有一家面包店拉开半扇窗。绿色的小灯亮了。我朝那盏灯走过去。'),
     ],
+    after: [
+      narration('店里还没挂牌子。炉边的人问，是照旧吗？看清我的脸才说，抱歉，你和每天这个点来的那个人背着一样的包。'),
+      narration('我说，今天第一次来。她从烤盘上掰了一个面包给我，叫我明天路过就试试另一种。'),
+      narration('我把面包店写到地图上。写完才发现，那支笔原来一直夹在工牌套里。'),
+    ],
   },
   solo: {
     title: '下一站，天亮', ja: '次は、朝', district: null,
+    summary: '收据背面留着一个空白地名。可以等到了地方再写。',
     lines: [
       narration('四点五十分。站台的广播刚响，一名清洁员从里面把玻璃门推开。'),
       narration('我没有订去别处的票。口袋翻出来，只找到一张被雨打皱的收据。'),
       narration('我在背面写下今晚走过的路，把最后一个地名留空。列车门开了，天空才开始变亮。'),
+    ],
+    after: [
+      narration('车里还有座位。我坐到能看见玻璃上倒影的那一侧，给自己买了一张下午到海边的票。'),
+      narration('付款以前，我先查了一遍回程。付完款，把手机翻过去，安安静静地看完了第一座桥。'),
+    ],
+  },
+  mioAfter: {
+    title: '第一盆显影液', ja: '最初の一枚が浮かぶまで', district: 'shibuya', character: 'mio',
+    rendezvous: '与澪会合，一起去暗房', summary: '红灯亮着，浅盘里慢慢浮出你们都在场的一刻。',
+    expression: 'hopeful', pose: 'hold',
+    lines: [
+      narration('四点五十分。澪跳下天桥最后两级台阶。她手里拿着那张剪去一角的地址。'),
+      line('拿两张做什么呢？反正现在是一起走。', 'relieved', 'offer', true),
+      narration('九点，暗房的卷帘门升起来。里面的人教我们关门，再教我们怎么在看不清彼此时递东西。'),
+      line('黑围裙，往左举一下。好，我接住了。', 'resolve', 'hold', true),
+      narration('红灯下，照片先浮出天桥的栏杆，然后是两只手。一只抓着相机的背带，另一只抓着那个人的衣袖。'),
+      line('你看，底下还留着空。我们把两个人的名字都写上吧。写错了也留着。', 'hopeful', 'hold', true),
+    ],
+  },
+  renAfter: {
+    title: '第六把椅子', ja: '六つ目の椅子', district: 'shinjuku', character: 'ren',
+    rendezvous: '与莲会合，一起送交接信', summary: '写完交接信，她留下一样明天还能回去拿的东西。',
+    expression: 'relieved', pose: 'offer',
+    lines: [
+      narration('四点五十分。莲把信封揣进外套。车站门开了，她问我过街时要不要牵着她。'),
+      line('我放假了。找个理由牵手这种事，也能外包吧？', 'wry', 'offer', true),
+      narration('吃完早饭，我们沿原路回到黄金街。她在新店主门口的砖阶上坐下，膝盖上垫着写了一半的交接信。'),
+      line('后门渗水。冰铲在窗台下。第六把椅子……这一行该怎么写才不会被当成麻烦？', 'uneasy', 'hold', true),
+      narration('我说，就写想坐。莲照着写了，又用钥匙圈上的旧铜片把信压在门缝下。'),
+      line('好了。要是她问这把钥匙开哪儿，我就进去喝一杯，慢慢讲。', 'nostalgic', 'still', true),
+      narration('她站起来，把我也拉起来。那天她从旧店门口走过两次，第二次轻了许多。'),
+    ],
+  },
+  yuiAfter: {
+    title: '沿途有声', ja: '途中の音を残して', district: 'akihabara', character: 'yui',
+    rendezvous: '与结衣会合，录完有声地图', summary: '这份东京地图里，每个地点都能用耳朵找到。',
+    expression: 'laugh', pose: 'hold',
+    lines: [
+      narration('四点五十分。秋叶原站台边，结衣抬起两根手指。灯亮的时候，她收起了一根。'),
+      line('开始。现在的声音叫进站。接下来是什么，你报。', 'resolve', 'hold', true),
+      narration('我报了半个“秋”，正好被列车的气阀盖掉。我们都笑了，直到车门再次关上。'),
+      line('留下。等我哥听到这里，他肯定知道“秋”后面是几个字。', 'laugh', 'hold', true),
+      narration('她给录音起名《沿途有声》，附上一张我在纸上画的图。售货机、卷帘门和始发车，三处都有一个时间戳。'),
+      line('末尾还有五秒。以后想起来了，就往这五秒后面加。下回谁先开口都行。', 'hopeful', 'offer', true),
+    ],
+  },
+  suzuAfter: {
+    title: '寄到今天的信', ja: '今日に届く手紙', district: 'asakusa', character: 'suzu',
+    rendezvous: '与铃会合，一起去投信', summary: '写给过去的话，从今早开始有了一个收件地址。',
+    expression: 'relieved', pose: 'hold',
+    lines: [
+      narration('四点五十分，桥下的铁轨响起来。铃把折好的信交给我，请我念一遍收件地址。'),
+      line('门牌号对。收件人的名字……也对。嗯，替我拿一会儿好吗？我想看看天。', 'uneasy', 'offer', true),
+      narration('开门的第一家店把木凳搬到了街上。再过一个拐角，红邮筒的投信口比我们想的窄一些。'),
+      line('我在信末尾又写了一句。今年我会种薄荷。如果比她养的矮，也留着喝茶。', 'hopeful', 'hold', true),
+      narration('我们把信从窄口送进去，听见它落到底部。'),
+      line('到了我就找你。你可以先读地址，读慢一点。剩下的，我们坐下来再读。', 'relieved', 'hold', true),
     ],
   },
 };

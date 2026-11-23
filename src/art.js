@@ -8,6 +8,8 @@ const designs = {
     backLines: 'M114 138Q124 241 102 307M121 182Q134 265 119 328M275 147Q274 230 294 334M283 175Q280 240 303 311',
     bang: 'M112 157C96 89 126 46 177 36 228 27 274 54 285 102Q298 156 273 214L257 239 264 174Q251 153 245 122 221 114 199 78 169 115 130 132L126 159 134 216Q111 204 112 157Z',
     detail: 'M117 109Q133 62 187 50M123 119Q174 94 192 62M201 58Q224 101 256 112M216 53Q260 66 276 113M267 128Q280 157 272 197',
+    sheen: 'M112 111Q127 64 177 52Q159 64 149 79Q126 94 112 111ZM210 52Q253 60 272 96Q246 76 225 71Z',
+    face: 'M127 120Q133 72 168 66 222 50 255 92 269 108 262 153 259 180 243 199 225 223 198 229 169 229 145 203 130 185 126 157Z',
     collar: 'M142 237 170 255 195 287 156 332 110 289ZM248 234 224 258 200 287 250 335 288 278Z',
     seam: 'M125 305Q134 388 129 553M269 307Q266 407 278 553M87 389 122 407M286 397 329 371',
     accessory: 'camera',
@@ -19,6 +21,8 @@ const designs = {
     backLines: 'M117 160Q124 202 111 235M274 159Q262 205 288 240',
     bang: 'M109 152C92 88 136 35 187 33 233 27 272 52 287 99Q296 128 273 179L260 190 259 139Q234 131 226 109 197 133 160 124L178 105Q146 118 130 147L127 190Q109 185 109 152Z',
     detail: 'M111 118Q126 67 182 48M123 113Q147 80 205 60M159 111Q196 90 223 69M225 63Q260 75 279 113M271 111 267 151',
+    sheen: 'M108 113Q124 67 176 51Q164 61 153 76Q131 91 108 113ZM224 56Q262 63 277 96L259 77Z',
+    face: 'M125 123Q130 75 167 65 220 48 255 92 267 105 263 155 262 180 248 196 228 224 198 233 171 230 145 208 128 192 124 157Z',
     collar: 'M143 231 174 247 196 279 166 323 126 276ZM244 231 224 247 196 279 227 313 269 270Z',
     seam: 'M95 326 122 393 112 561M291 321 274 385 282 558M59 402 103 419M300 419 341 397',
     accessory: 'keys',
@@ -30,6 +34,8 @@ const designs = {
     backLines: 'M287 99Q318 87 326 140M290 106Q317 108 329 151M112 147Q115 214 126 222M271 166Q261 215 250 231',
     bang: 'M111 160C97 108 115 53 165 38 205 22 259 38 281 85Q301 123 277 177L259 188 261 137 239 128 246 150Q214 145 202 102L195 135Q172 148 145 143L156 117 131 145 128 172Z',
     detail: 'M114 115Q141 64 179 55M143 115Q164 87 190 73M185 110Q193 95 199 70M214 68Q216 108 239 123M222 54Q263 64 281 106',
+    sheen: 'M111 111Q129 65 179 51Q162 65 152 78Q131 91 111 111ZM215 48Q266 56 280 97Q261 79 229 66Z',
+    face: 'M127 120Q135 73 171 62 216 48 249 84 271 110 262 155 257 180 240 197 224 216 196 224 176 224 149 205 130 190 124 160Z',
     collar: 'M132 237Q117 257 116 290L153 350 194 291 161 244ZM244 233Q278 239 282 274L249 337 207 285 230 247Z',
     seam: 'M91 310 119 381 112 554M293 312 275 390 278 552M65 365 119 387M277 389 329 368',
     accessory: 'headphones',
@@ -41,6 +47,8 @@ const designs = {
     backLines: 'M114 146Q129 241 111 285M126 188Q136 274 124 319M277 151Q274 220 284 254',
     bang: 'M112 154C99 103 115 58 165 41 217 23 273 47 289 99Q303 139 279 185L259 207 264 143Q240 127 231 116L226 134Q181 138 143 127L128 161 132 191Q114 180 112 154Z',
     detail: 'M111 106Q128 64 181 52M129 108Q146 72 187 59M156 116Q171 89 182 78M188 119Q213 78 206 61M225 56Q255 67 276 106',
+    sheen: 'M112 103Q130 65 180 52Q151 74 138 92ZM211 44Q250 48 275 89Q252 71 219 61Z',
+    face: 'M127 120Q132 72 165 64 221 48 253 89 269 109 263 150 261 181 246 198 229 221 198 232 177 230 150 208 128 190 126 157Z',
     collar: 'M145 229 178 253 198 285 155 319 117 275ZM242 229 219 255 198 285 233 311 275 267Z',
     seam: 'M91 326 126 396 115 558M294 314 267 406 285 553M67 404 123 426M274 421 334 386',
     accessory: 'braid',
@@ -49,23 +57,30 @@ const designs = {
 
 let instance = 0;
 
-function eye(x, y, color, expression, flip) {
-  const closed = expression === 'smile' || expression === 'laugh' || (expression === 'wry' && flip);
-  const wide = expression === 'surprise';
-  const soft = ['shy', 'tender', 'sad'].includes(expression);
-  const brow = expression === 'sad' ? 'M1 -8Q14 -15 35 -16' : expression === 'resolve' ? 'M1 -16Q18 -16 35 -8' : 'M1 -10Q14 -18 35 -13';
+function eye(id, x, y, expression, flip) {
+  const closed = ['smile', 'laugh', 'relieved'].includes(expression) || (expression === 'wry' && flip);
+  const wide = ['surprise', 'hopeful'].includes(expression);
+  const soft = ['shy', 'tender', 'sad', 'uneasy', 'nostalgic'].includes(expression);
+  const brow = {
+    sad: 'M1 -8Q14 -15 35 -18', resolve: 'M1 -16Q18 -16 35 -8',
+    uneasy: 'M1 -9Q13 -13 35 -19', hopeful: 'M1 -12Q15 -22 35 -14',
+    nostalgic: 'M1 -10Q15 -15 35 -12', relieved: 'M1 -8Q15 -17 35 -12',
+  }[expression] ?? 'M1 -10Q14 -18 35 -13';
   const lid = wide ? 'M0 6Q12 -10 27 -4Q35 -2 39 8' : soft ? 'M0 7Q15 1 26 3Q35 4 39 10' : 'M0 6Q14 -5 28 -2Q36 0 39 8';
-  const iris = expression === 'shy' ? (flip ? 16 : 25) : 21;
+  const shape = `${lid}Q23 19 4 12Z`;
+  const cast = expression === 'uneasy' || expression === 'shy' ? 5 : expression === 'nostalgic' ? -3 : 0;
+  const clip = `${id}${flip ? 'right' : 'left'}`;
   return `<g transform="translate(${x} ${y}) scale(${flip ? -1 : 1} 1)">
-    <path d="${brow}" fill="none" stroke="#593745" stroke-width="2.3" stroke-linecap="round"/>
-    ${closed ? '<path d="M0 9Q17 -6 36 7" fill="none" stroke="#382431" stroke-width="3.4" stroke-linecap="round"/><path d="M2 8 -5 4M33 5 39 3" stroke="#382431" stroke-width="1.7"/>' : `
-      <path d="${lid}Q23 19 4 12Z" fill="#fff3ec" stroke="#724952" stroke-width="1.1"/>
-      <g transform="translate(${iris - 21} ${soft ? 3 : 0})">
-        <ellipse cx="21" cy="7" rx="${wide ? 8 : 9.5}" ry="${soft ? 5.5 : wide ? 9.8 : 8.4}" fill="${color}"/>
+    <path d="${brow}" fill="none" stroke="#724d5d" stroke-width="2.3"/>
+    ${closed ? `<path d="${expression === 'relieved' ? 'M0 6Q17 15 36 7' : 'M0 9Q17 -6 36 7'}M1 8 -4 4" fill="none" stroke="#382431" stroke-width="2.9"/>` : `
+      <clipPath id="${clip}"><path d="${shape}"/></clipPath>
+      <path d="${shape}" fill="#fff3ec" stroke="#724952" stroke-width="1.1"/>
+      <g clip-path="url(#${clip})"><g transform="translate(${flip ? -cast : cast} ${soft ? 3 : 0})">
+        <ellipse cx="21" cy="7" rx="${wide ? 8 : 9.5}" ry="${soft ? 7 : 9.8}" fill="url(#${id}iris)"/>
         <ellipse cx="20" cy="6" rx="4.5" ry="${soft ? 4.5 : 6.8}" fill="#29213b"/>
         <path d="M14 9Q21 16 28 9" stroke="#ffc3d5" stroke-opacity=".6" fill="none"/>
-        <circle cx="17.7" cy="3.2" r="2.5" fill="#fff9ee"/><circle cx="25.3" cy="10" r="1.35" fill="#f9d9e2"/>
-      </g>
+        <ellipse cx="${flip ? 23 : 17.7}" cy="3.2" rx="2.5" ry="1.7" fill="#fff9ee"/><circle cx="25.3" cy="10" r="1.15" fill="#f9d9e2"/>
+      </g></g>
       <path d="${lid}M0 7 -5 3M2 4 -2 0" fill="none" stroke="#382331" stroke-width="2.65" stroke-linecap="round"/>`}
     </g>`;
 }
@@ -81,6 +96,10 @@ function mouth(expression) {
     shy: 'M186 191Q195 196 202 190Q199 197 192 196Z',
     tender: 'M181 190Q194 195 205 187Q203 193 193 196Z',
     laugh: 'M176 183Q195 189 211 181Q207 204 193 205Q181 201 176 183Z',
+    uneasy: 'M187 194Q193 188 202 192L205 194Q196 194 187 194Z',
+    hopeful: 'M182 188Q194 191 206 184Q201 198 193 197Q186 196 182 188Z',
+    nostalgic: 'M184 191Q192 194 204 189Q201 194 193 196Z',
+    relieved: 'M182 190Q194 197 205 188Q198 200 191 198Z',
   };
   return `<path d="${paths[expression] || paths.neutral}" fill="#a45c68" stroke="#9a5263" stroke-width=".8"/>
     ${expression === 'laugh' ? '<path d="M180 185Q195 190 207 184L205 189Q195 194 182 190Z" fill="#ffece3"/>' : '<path d="M188 199Q196 201 202 197" fill="none" stroke="#ffe7da" stroke-width="1.5" stroke-linecap="round"/>'}`;
@@ -159,16 +178,22 @@ function arms(pose, id, character) {
       <path d="M322 249 318 228 305 212Q302 204 309 204L321 212 316 186Q316 177 322 180L331 200 334 175Q337 167 342 174L343 199 350 179Q355 173 359 180L355 207 363 195Q371 191 371 199L361 222Q358 238 348 248Z" fill="url(#${id}skin)" stroke="${ink}" stroke-width="1.6"/>
       <path d="M323 222Q337 211 351 215M340 217q-9 10-6 16" fill="none" stroke="#ac6978" stroke-width="1.4"/>`;
   }
+  if (pose === 'reflect') {
+    return `<path d="M329 367Q314 357 290 355L243 283 218 300 251 383Q269 419 312 418L333 405Z" fill="url(#${id}coat)" stroke="${ink}" stroke-width="2.3"/>
+      <path d="M243 285 239 267 239 247q-2-6-5-2l-4 14-6-17q-3-5-6-1l3 17-8-10q-5-3-6 1l8 15-7-2q-7 0-4 5l13 11 6 18Z" fill="url(#${id}skin)" stroke="${ink}" stroke-width="1.5"/>
+      <path d="M215 298 246 279 254 296 222 315ZM253 307q24 55 52 66" fill="url(#${id}coat)" stroke="${ink}" stroke-width="1.5"/>`;
+  }
   return '';
 }
 
-export function portrait(character, expression = 'neutral', pose = 'still', warm = false) {
+export function portrait(character, expression = 'neutral', pose = 'still', warm = false, dawn = false) {
   const d = designs[character];
   if (!d) return '';
   const id = `p${++instance}`;
   const gradient = (name, stops) => `<linearGradient id="${id}${name}" x2="35%" y2="100%">${stops.map((color, i) => `<stop offset="${i / (stops.length - 1)}" stop-color="${color}"/>`).join('')}</linearGradient>`;
-  const tilt = { mio: -3, ren: 1, yui: 4, suzu: -1 }[character] + (expression === 'shy' ? 4 : 0);
+  const tilt = { mio: -3, ren: 1, yui: 4, suzu: -1 }[character] + ({ shy: 4, uneasy: 3, relieved: -3, nostalgic: -4 }[expression] ?? 0);
   const blush = expression === 'shy' || expression === 'laugh' ? .76 : .43;
+  const light = dawn ? '#ffd2a6' : d.lining;
   const freckles = character === 'ren' ? '<path d="M147 172h.1m5-2h.1m6 2h.1m75-1h.1m6-2h.1m5 2h.1" stroke="#a56359" stroke-width="2.2" stroke-linecap="round"/>' : '';
   const detail = {
     mio: '<path d="M123 186q-5 17 2 21" stroke="#efc5d5" stroke-width="2" fill="none"/><circle cx="126" cy="208" r="3" fill="#f8d7e1"/>',
@@ -181,6 +206,8 @@ export function portrait(character, expression = 'neutral', pose = 'still', warm
     <defs>
       ${gradient('hair', d.hair)}${gradient('back', [d.hair[0], d.hair[2], ink])}
       ${gradient('skin', d.skin)}${gradient('coat', d.cloth)}
+      ${gradient('iris', ['#2a203a', d.eyes, light])}
+      <linearGradient id="${id}rim" x2="80%" y2="100%"><stop stop-color="${light}" stop-opacity=".82"/><stop offset="1" stop-color="${light}" stop-opacity="0"/></linearGradient>
       <radialGradient id="${id}blush"><stop stop-color="#dc7999" stop-opacity="${blush}"/><stop offset="1" stop-color="#ea9bad" stop-opacity="0"/></radialGradient>
     </defs>
     <g stroke-linejoin="round" stroke-linecap="round">
@@ -195,19 +222,23 @@ export function portrait(character, expression = 'neutral', pose = 'still', warm
       <path d="${d.collar}" fill="none" stroke="${d.lining}" stroke-opacity=".44" stroke-width="1.2"/>
       <path d="${d.seam}" fill="none" stroke="#261e31" stroke-opacity=".62" stroke-width="2.4"/>
       <path d="M58 322Q75 293 102 282M287 270Q321 280 338 329M43 474 36 548M355 471 369 547" fill="none" stroke="${d.lining}" stroke-opacity=".42" stroke-width="3"/>
+      <path d="M57 319Q76 290 109 276M68 343Q83 335 107 331M45 467Q69 473 99 482M302 450Q327 444 349 434" fill="none" stroke="url(#${id}rim)" stroke-width="1.3"/>
+      <path d="M80 373Q97 379 113 378M284 385Q311 382 332 370M79 504q11 4 28 4M292 507q20-3 37-11" fill="none" stroke="${ink}" stroke-opacity=".38" stroke-width="1.4" stroke-dasharray="3 3"/>
       ${outfit(character, d, warm)}
       ${(character !== 'mio' || pose !== 'hold') ? accessory(d.accessory, d.lining) : ''}
       <g transform="rotate(${tilt} 197 210)">
       <path d="M135 150Q110 135 115 162 119 180 139 183M250 150Q276 135 272 162 270 180 250 183" fill="url(#${id}skin)" stroke="${ink}" stroke-width="1.7"/>
-      <path d="M127 120Q133 72 168 66 222 50 255 92 269 108 262 153 259 180 243 199 225 223 198 231 169 229 145 203 130 185 126 157Z" fill="url(#${id}skin)" stroke="${ink}" stroke-width="2"/>
+      <path d="${d.face}" fill="url(#${id}skin)" stroke="${ink}" stroke-width="2"/>
+      <path d="M132 163Q138 199 182 219Q152 211 137 193Q129 180 132 163Z" fill="url(#${id}rim)" opacity=".64"/>
       <path d="M139 137Q162 133 178 144M208 141Q229 135 249 141" stroke="#f4bac4" fill="none" stroke-width="3" opacity=".75"/>
       <ellipse cx="153" cy="177" rx="23" ry="12" fill="url(#${id}blush)"/><ellipse cx="237" cy="176" rx="22" ry="11" fill="url(#${id}blush)"/>
       ${freckles}
-      ${eye(139, 150, d.eyes, expression, false)}
-      ${eye(251, 149, d.eyes, expression, true)}
+      ${eye(id, 139, 150, expression, false)}
+      ${eye(id, 251, 149, expression, true)}
       <path d="M193 155Q190 170 187 176l7 3" stroke="#bd7a83" stroke-width="1.2" fill="none"/><path d="M194 171 197 175" stroke="#ffede1" stroke-width="2"/>
       ${mouth(expression)}
       <path d="${d.bang}" fill="url(#${id}hair)" stroke="${ink}" stroke-width="2.35"/>
+      <path d="${d.sheen}" fill="url(#${id}rim)" opacity="${dawn ? .68 : .42}"/>
       <path d="${d.detail}" fill="none" stroke="${d.hair[1]}" stroke-width="2" opacity=".85"/>
       <path d="M111 108Q116 68 155 49M274 86Q291 115 284 143" fill="none" stroke="${d.lining}" stroke-width="2.2" opacity=".5"/>
       ${detail}

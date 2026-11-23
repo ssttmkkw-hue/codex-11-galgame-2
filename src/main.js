@@ -1,5 +1,5 @@
 import { portrait } from './art.js';
-import { advance, choose, clock, currentLine, newNight, storyScene, visit, waitForDawn, walk } from './game.js';
+import { advance, choose, clock, currentLine, endingHasCoda, endingLines, newNight, storyScene, visit, waitForDawn, walk } from './game.js';
 import { NightMusic } from './music.js';
 import { DAWN, START, districts, endings, heroines } from './story.js';
 import { loadGallery, loadSettings, loadSlot, saveGallery, saveSettings, saveSlot } from './storage.js';
@@ -8,6 +8,7 @@ import { escapeHTML, icon, mapView, photo, resultsView, sceneView, titleView } f
 const app = document.querySelector('#app');
 const panel = document.querySelector('#panel');
 const notification = document.querySelector('#notice');
+const dialogueAnnouncement = document.querySelector('#dialogue-announcement');
 const music = new NightMusic();
 const settings = loadSettings();
 const gallery = loadGallery();
@@ -18,20 +19,25 @@ let mode = null;
 let typing = null;
 let readTimer;
 let noticeTimer;
+let currentNotice;
 let panelTrigger;
 let galleryPreview = null;
+let previewCount = 0;
+let gallerySelection = null;
 
 function soundCue() {
   if (galleryPreview) {
-    const { id, type } = galleryPreview;
+    const { id, type, serial } = galleryPreview;
     const ending = type === 'ending' ? endings[id] : null;
     music.setCue({
       district: ending ? memoryDistrict(id) : heroines[id].district,
       time: ending ? DAWN : START,
       character: ending ? ending.character : id,
       affection: 9,
+      chapter: 5,
       mood: ending ? 'ending' : 'scene',
       ending: ending ? id : null,
+      preview: serial,
     });
     return;
   }
@@ -42,6 +48,7 @@ function soundCue() {
     time: isTitle ? START : state.time,
     character,
     affection: character ? state.bonds[character].affection : 0,
+    chapter: isTitle ? 0 : state.scene?.chapter,
     mood: isTitle ? 'title' : state.ending ? 'ending' : state.phase,
     ending: isTitle ? null : state.ending,
   });
@@ -60,9 +67,19 @@ function stopPreview() {
 
 function notify(text) {
   clearTimeout(noticeTimer);
-  notification.textContent = text;
-  notification.classList.add('visible');
-  noticeTimer = window.setTimeout(() => notification.classList.remove('visible'), 2600);
+  if (currentNotice) {
+    currentNotice.textContent = '';
+    currentNotice.classList.remove('visible');
+  }
+  const status = panel.open ? panel.querySelector('.panel-status') : notification;
+  currentNotice = status;
+  status.textContent = text;
+  status.classList.add('visible');
+  noticeTimer = window.setTimeout(() => {
+    status.textContent = '';
+    status.classList.remove('visible');
+    currentNotice = null;
+  }, 3600);
 }
 
 function pause() {
@@ -106,14 +123,13 @@ function writeLine({ instant = false } = {}) {
   typing = { text, node, frame: requestAnimationFrame(tick) };
 }
 
-function render({ instant = false, focus = false } = {}) {
+function render({ instant = false, focus = false, preserveFocus = true } = {}) {
   const active = document.activeElement;
-  const restore = app.contains(active) && active instanceof HTMLButtonElement ? active.dataset : null;
+  const restore = preserveFocus && app.contains(active) && active instanceof HTMLButtonElement ? active.dataset : null;
   pause();
   document.body.dataset.screen = isTitle ? 'title' : state.phase;
   if (isTitle) {
-    const hasSave = ['auto', 'slot1', 'slot2', 'slot3'].some(loadSlot);
-    app.innerHTML = titleView(hasSave, settings.muted);
+    app.innerHTML = titleView(Boolean(loadSlot('auto')), settings.muted);
   } else if (state.phase === 'scene') {
     app.innerHTML = sceneView(state, mode, settings.muted);
     writeLine({ instant });
@@ -135,7 +151,7 @@ function render({ instant = false, focus = false } = {}) {
 
 function transition(next, instant = false) {
   if (next === state) return;
-  const phase = state?.phase;
+  const phase = isTitle ? null : state?.phase;
   const district = state?.district;
   state = next;
   isTitle = false;
@@ -147,19 +163,29 @@ function transition(next, instant = false) {
     gallery.seen.push(character);
     saveGallery(gallery);
   }
-  if (state.phase === 'results' && !gallery.locations[state.ending]) {
-    if (!gallery.unlocked.includes(state.ending)) gallery.unlocked.push(state.ending);
-    gallery.locations[state.ending] = state.district;
-    if (!saveGallery(gallery)) notify('浏览器无法保存画廊进度。');
+  if (state.phase === 'results') {
+    const id = state.ending;
+    const known = gallery.unlocked.includes(id);
+    const newCoda = endingHasCoda(state) && !gallery.codas.includes(id);
+    if (!known) gallery.unlocked.push(id);
+    if (newCoda) gallery.codas.push(id);
+    if (!known || newCoda || !gallery.locations[id]) {
+      gallery.locations[id] = state.district;
+      if (!saveGallery(gallery)) notify('浏览器无法保存画廊进度。');
+    }
   }
   saveSlot('auto', state);
-  render({ instant, focus: true });
+  render({ instant, focus: true, preserveFocus: phase === state.phase });
+  const line = currentLine(state);
+  dialogueAnnouncement.textContent = state.phase === 'scene' && line ?
+    `${line.spoken ? heroines[character].name : '旁白'}：${line.text}` : '';
   if (phase !== state.phase) window.scrollTo(0, 0);
 }
 
 function home() {
   isTitle = true;
   mode = null;
+  dialogueAnnouncement.textContent = '';
   render();
   window.scrollTo(0, 0);
   app.querySelector('[data-action="start"]')?.focus({ preventScroll: true });
@@ -169,7 +195,7 @@ function showPanel(title, content, keepPreview = false) {
   pause();
   if (!keepPreview) stopPreview();
   if (!panel.open) panelTrigger = document.activeElement;
-  panel.innerHTML = `<header class="panel-header"><h2 id="panel-title">${title}</h2><button class="quiet close" data-action="close" aria-label="关闭">${icon('x')}</button></header><div class="panel-body">${content}</div>`;
+  panel.innerHTML = `<header class="panel-header"><h2 id="panel-title">${title}</h2><button class="quiet close" data-action="close" aria-label="关闭">${icon('x')}</button></header><div class="panel-body">${content}</div><p class="panel-status" role="status"></p>`;
   if (!panel.open) panel.showModal();
   panel.querySelector('.close').focus({ preventScroll: true });
 }
@@ -219,7 +245,7 @@ function showLog() {
   body.scrollTop = body.scrollHeight;
 }
 
-function showGallery() {
+function showGallery(returning = false) {
   const endingsList = Object.entries(endings).map(([id, ending]) => {
     const unlocked = gallery.unlocked.includes(id);
     return `<button class="memory ${unlocked ? '' : 'locked'}" data-action="memory" data-id="${id}" ${unlocked ? '' : 'disabled'}
@@ -235,6 +261,10 @@ function showGallery() {
   }).join('');
   showPanel('回忆画廊', `<h3 class="panel-subhead">始发的故事 <span>${gallery.unlocked.length} / ${Object.keys(endings).length}</span></h3>
     <div class="memory-grid">${endingsList}</div><h3 class="panel-subhead people-heading">夜里遇见的人 <span>${gallery.seen.length} / ${Object.keys(heroines).length}</span></h3><div class="people-grid">${faces}</div>`);
+  if (returning && gallerySelection) {
+    const { id, action } = gallerySelection;
+    panel.querySelector(`[data-action="${action}"][data-id="${id}"]`)?.focus();
+  }
 }
 
 function memoryDistrict(id) {
@@ -243,32 +273,39 @@ function memoryDistrict(id) {
 
 function previewButton(id, type, label) {
   const playing = galleryPreview?.id === id && galleryPreview.type === type;
-  return `<button class="secondary" data-action="preview" data-id="${id}" data-type="${type}" aria-pressed="${playing}">${icon('music')} ${label}</button>`;
+  return `<button class="secondary preview-button" data-action="preview" data-id="${id}" data-type="${type}" aria-pressed="${playing}">${icon('music')} ${label}</button>`;
 }
 
 function showPerson(id, variant = 0) {
   if (!gallery.seen.includes(id)) return;
+  gallerySelection = { action: 'person', id };
   const person = heroines[id];
   const looks = [
     ['日常', 'neutral', 'still', false], ['笑容', 'smile', 'still', false], ['惊讶', 'surprise', 'offer', false],
     ['沉思', 'sad', 'crossed', true], ['专注', 'resolve', 'hold', true], ['打趣', 'wry', 'crossed', true],
     ['害羞', 'shy', 'hold', true], ['温柔', 'tender', 'hold', true], ['放声笑', 'laugh', 'wave', true],
+    ['不安', 'uneasy', 'reflect', true], ['怀念', 'nostalgic', 'reflect', true],
+    ['期待', 'hopeful', 'offer', true], ['释然', 'relieved', 'still', true],
   ];
   const [, expression, pose, warm] = looks[variant];
   showPanel(person.name, `<div class="person-preview" style="--person: ${person.color}; --scene: url('${photo(person.district)}')">${portrait(id, expression, pose, warm)}</div>
     <div class="person-content"><p lang="ja">${person.kana}</p><p><strong>${person.role}</strong> · ${person.bio}</p></div>
     <div class="look-list">${looks.map(([label], i) => `<button class="secondary" data-action="look" data-id="${id}" data-variant="${i}" aria-pressed="${i === variant}">${label}</button>`).join('')}</div>
-    <div class="memory-controls"><button class="quiet" data-action="gallery">${icon('back')} 返回画廊</button>
+    <div class="memory-controls"><button class="quiet" data-action="gallery-back">${icon('back')} 返回画廊</button>
       ${previewButton(id, 'person', '聆听角色旋律')}</div>`, galleryPreview?.type === 'person' && galleryPreview.id === id);
 }
 
 function showMemory(id) {
   if (!gallery.unlocked.includes(id)) return;
+  gallerySelection = { action: 'memory', id };
   const ending = endings[id];
-  showPanel(ending.title, `<div class="memory-preview" style="--scene: url('${photo(memoryDistrict(id))}')">${ending.character ? portrait(ending.character, 'tender', 'hold', true) : ''}</div>
-    <p class="memory-ja" lang="ja">${ending.ja}</p>
-    <div class="memory-controls"><button class="quiet" data-action="gallery">${icon('back')} 返回画廊</button>
-      ${previewButton(id, 'ending', '聆听结尾曲')}</div>`);
+  const transcript = endingLines(id, gallery.codas.includes(id)).map((line) =>
+    `<p${line.spoken ? ' class="memory-spoken"' : ''}>${line.spoken ? `<b>${heroines[ending.character].short}</b> ` : ''}${escapeHTML(line.text)}</p>`).join('');
+  showPanel(ending.title, `<div class="memory-preview" style="--scene: url('${photo(memoryDistrict(id))}')">${ending.character ? portrait(ending.character, ending.expression ?? 'tender', ending.pose ?? 'hold', true, true) : ''}</div>
+    <p class="memory-ja" lang="ja">${ending.ja}</p><p class="panel-note">${ending.summary}</p>
+    <div class="memory-controls"><button class="quiet" data-action="gallery-back">${icon('back')} 返回画廊</button>
+      ${previewButton(id, 'ending', '聆听结尾曲')}</div>
+    <details class="memory-story"><summary>重读结局</summary><div>${transcript}</div></details>`);
 }
 
 function showDistrict(id) {
@@ -322,12 +359,15 @@ const actions = {
   auto: () => toggleMode('auto'),
   skip: () => toggleMode('skip'),
   log: showLog,
-  gallery: showGallery,
+  gallery: () => showGallery(),
+  'gallery-back': () => showGallery(true),
   memory: showMemory,
   district: showDistrict,
   person: (id) => showPerson(id),
   look: (id, button) => {
+    const scroll = panel.querySelector('.panel-body').scrollTop;
     showPerson(id, Number(button.dataset.variant));
+    panel.querySelector('.panel-body').scrollTop = scroll;
     panel.querySelector('.look-list [aria-pressed="true"]')?.focus({ preventScroll: true });
   },
   preview: (id, button) => {
@@ -340,7 +380,7 @@ const actions = {
       notify('音乐音量为零。可以在设置中调高音量。');
       return;
     }
-    galleryPreview = { id, type: button.dataset.type };
+    galleryPreview = { id, type: button.dataset.type, serial: ++previewCount };
     applyVolume();
     soundCue();
     button.setAttribute('aria-pressed', 'true');
@@ -390,7 +430,9 @@ document.addEventListener('click', (event) => {
       if (!started) notify('浏览器未能开启声音。');
     });
   } else if (!settings.muted && action !== 'sound') music.start();
+  const wasOpen = panel.open;
   actions[action]?.(button.dataset.id, button);
+  if (!wasOpen && panel.open) panelTrigger = button;
 });
 
 document.addEventListener('keydown', (event) => {
@@ -400,7 +442,9 @@ document.addEventListener('keydown', (event) => {
   if (state.phase !== 'scene') return;
   if (event.code === 'KeyA') toggleMode('auto');
   if (event.code === 'KeyS') toggleMode('skip');
-  if (['Space', 'Enter'].includes(event.code) && !(document.activeElement instanceof HTMLButtonElement) && currentLine(state)) {
+  const focused = document.activeElement;
+  if (['Space', 'Enter'].includes(event.code) && currentLine(state) &&
+    (!(focused instanceof HTMLButtonElement) || focused.dataset.action === 'advance')) {
     event.preventDefault();
     handleAdvance();
   }

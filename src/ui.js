@@ -29,7 +29,7 @@ export const escapeHTML = (text) => String(text).replace(/[&<>"']/g, (char) => (
 export const photo = (district) => `./assets/${district}.webp`;
 
 function soundButton(muted) {
-  return `<button class="quiet sound-toggle" data-action="sound" aria-pressed="${muted}" aria-label="${muted ? '打开声音' : '关闭声音'}">${icon(muted ? 'mute' : 'sound')}<span>${muted ? '静音' : '声音'}</span></button>`;
+  return `<button class="quiet sound-toggle" data-action="sound" aria-pressed="${!muted}" aria-label="音乐">${icon(muted ? 'mute' : 'sound')}<span>${muted ? '静音' : '声音'}</span></button>`;
 }
 
 function brand(interactive) {
@@ -37,7 +37,7 @@ function brand(interactive) {
   return interactive ? `<button class="brand" data-action="home" aria-label="回到标题">${content}</button>` : `<div class="brand">${content}</div>`;
 }
 
-export function titleView(hasSave, muted) {
+export function titleView(hasAuto, muted) {
   return `<main class="title-screen">
     <header class="title-bar">
       ${brand(false)}
@@ -51,8 +51,9 @@ export function titleView(hasSave, muted) {
           <p class="title-translation">终电之后，始发之前</p>
           <p class="hero-description">在涩谷错过了末班车。<br>距离始发还有四小时二十分。今晚，你想往哪里走？</p>
           <div class="title-actions">
-            <button class="primary" data-action="start"><span>开始夜行</span>${icon('arrow')}</button>
-            <button class="secondary" data-action="load-menu">${icon('save')}<span>${hasSave ? '继续夜行' : '读取存档'}</span></button>
+            ${hasAuto ? `<button class="primary" data-action="load" data-id="auto">继续夜行 ${icon('arrow')}</button>` : ''}
+            <button class="${hasAuto ? 'secondary' : 'primary'}" data-action="start"><span>${hasAuto ? '开始新的一夜' : '开始夜行'}</span>${icon('arrow')}</button>
+            <button class="quiet" data-action="load-menu">${icon('save')}<span>读取存档</span></button>
             <button class="quiet title-gallery" data-action="gallery">${icon('gallery')}<span>回忆画廊</span></button>
           </div>
         </div>
@@ -93,7 +94,7 @@ function scenePortrait(state, scene, current) {
   const spoken = (current?.spoken ? current : lines.slice(0, state.line + 1).findLast((entry) => entry.spoken))
     ?? (state.reply === null ? null : scene.lines.findLast((entry) => entry.spoken));
   const warm = spoken?.warm ?? (state.scene.kind === 'ending' || state.scene.chapter > 0 || scene.character === 'suzu');
-  return portrait(scene.character, spoken?.expression, spoken?.pose, warm);
+  return portrait(scene.character, spoken?.expression, spoken?.pose, warm, state.scene.kind === 'ending');
 }
 
 export function sceneView(state, mode, muted) {
@@ -116,8 +117,8 @@ export function sceneView(state, mode, muted) {
         </button>`).join('')}
       </section>` : `<section class="dialogue" aria-label="对话" data-action="advance">
         <div class="dialogue-tag speaker">${current?.spoken ? heroine.name : '旁白'}${current?.spoken && !ending ? `<small lang="ja">${heroine.kana}</small>` : ''}</div>
-        <p class="story-text"><span aria-hidden="true"></span><span class="sr-only">${escapeHTML(current?.text ?? '')}</span></p>
-        <button class="next-line" data-action="advance" aria-label="继续对话">${icon('down')}</button>
+        <p class="story-text"><span aria-hidden="true"></span><span class="story-copy">${escapeHTML(current?.text ?? '')}</span></p>
+        <button class="next-line" data-action="advance" aria-label="继续对话" title="继续对话 (空格 / Enter)">${icon('down')}</button>
       </section>`}
       ${toolbar(mode, !current, true)}
     </div>
@@ -183,7 +184,8 @@ export function mapView(state, selected, muted) {
     </button>`;
   }).join('');
   const wait = dawnOptions(state).map((option) => `<button class="wait-button" data-action="wait" data-id="${option.id}" ${option.walk > remaining ? 'disabled' : ''}>
-    <span>${option.label}</span><small>${option.walk > remaining ? '始发前无法抵达' : option.walk ? `步行 ${option.walk} 分钟 · 04:50` : '04:50'}</small>${icon('next')}
+    <span>${option.label}<small>${option.walk ? `${districts[option.district].name} · 步行 ${option.walk} 分钟` : '当前位置'}</small></span>
+    <small>${option.walk > remaining ? '来不及抵达' : '04:50'}</small>${icon('next')}
   </button>`).join('');
   return `<main class="game-screen map-screen" style="--scene: url('${photo(state.district)}')">
     ${hud(state, muted)}
@@ -206,9 +208,12 @@ export function mapView(state, selected, muted) {
           ${local && !event ? '<p class="map-hint">这里的故事已经读完。可以等始发，或继续走。</p>' : ''}
           ${!local ? `<button class="primary local-event" data-action="walk" data-id="${selected}" ${cost > remaining ? 'disabled' : ''}><span>步行前往<small>${cost > remaining ? '始发前无法抵达' : `+${cost} 分钟 · ${clock(state.time + cost)} 抵达`}</small></span>${icon('arrow')}</button>
           ${event && cost <= remaining ? `<p class="map-hint">${canVisit ? `可停留 · ${event.title}` : '抵达后时间不足，无法停留。'}</p>` : ''}` : ''}
-          <div class="wait-list">${wait}</div>
         </div>
       </div>
+      <section class="dawn-board" aria-labelledby="dawn-title">
+        <h2 id="dawn-title">${icon('train')} 始发安排</h2>
+        <div class="wait-list">${wait}</div>
+      </section>
     </section>
     <div class="map-toolbar">${toolbar(null, true, false)}</div>
   </main>`;
@@ -216,16 +221,17 @@ export function mapView(state, selected, muted) {
 
 export function resultsView(state, muted) {
   const ending = endings[state.ending];
-  return `<main class="game-screen results-screen dawn-screen" style="--scene: url('${photo(state.district)}')">
+  const accent = heroines[ending.character]?.color ?? 'var(--mint)';
+  return `<main class="game-screen results-screen dawn-screen" style="--scene: url('${photo(state.district)}'); --accent: ${accent}">
     ${hud(state, muted)}
-    <div class="result-art">${ending.character ? portrait(ending.character, 'tender', 'hold', true) : ''}</div>
+    <div class="result-art">${ending.character ? portrait(ending.character, ending.expression ?? 'tender', ending.pose ?? 'hold', true, true) : ''}</div>
     <section class="results-copy">
       <p class="hero-context"><span></span> 04:50 · 夜行结束</p>
       <p class="ending-ja" lang="ja">${ending.ja}</p>
       <h1 tabindex="-1">${ending.title}</h1>
-      <p>已收录至回忆画廊</p>
-      <div class="title-actions"><button class="primary" data-action="home">回到标题 ${icon('arrow')}</button>
-        <button class="secondary" data-action="gallery">${icon('gallery')} 回忆画廊</button>
+      <p>${ending.summary}</p>
+      <div class="title-actions"><button class="primary" data-action="memory" data-id="${state.ending}">${icon('book')} 重读与配乐</button>
+        <button class="secondary" data-action="home">回到标题 ${icon('arrow')}</button>
         <button class="quiet" data-action="log">${icon('book')} 文本记录</button>
         <button class="quiet" data-action="save-menu">${icon('save')} 存读档</button>
       </div>

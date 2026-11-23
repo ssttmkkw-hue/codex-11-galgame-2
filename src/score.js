@@ -10,6 +10,11 @@ const g = [43, 50, 54, 57, 59];       // Gmaj9
 const gm = [43, 58, 62, 64, 67];      // Gm6
 const e = [40, 55, 59, 62, 66];       // Em9
 const f = [42, 49, 52, 57, 59];       // F♯m11
+const bm = [46, 54, 59, 62, 66];      // Bm(maj7)/A♯
+const c = [48, 55, 59, 62, 64];       // Cmaj9
+const ef = [44, 52, 59, 62, 66];      // E9/G♯
+const fa = [42, 52, 58, 61, 66];      // F♯7
+const ga = [45, 54, 59, 62, 67];      // Gmaj7/A
 
 const districts = {
   shibuya: {
@@ -99,7 +104,50 @@ const finales = {
     melody: [[74, 73, 69], [66, 69], [69, 73, 78], [76, 74], [73, 69, 66], [67, 71, 76], [76, 73, 69], [66, 62]],
     rhythm: [[1, 2], [2.5, 4], [3.5, 3]],
   },
+  mioAfter: {
+    bpm: 70, lead: 'felt', backing: 'vibes', counter: 'cello',
+    harmony: [b, bm, d, ef, g, gm, aSus, d6],
+    melody: [[74, 73, 69], [78, 74, 69], [73, 76, 78], [80, 78, 76], [74, 71, 69], [70, 67, 64], [74, 71, 69], [66, 74]],
+    rhythm: [[.33, 2], [1.5, 4], [2.75, 3], [3.5, 2]],
+  },
+  renAfter: {
+    bpm: 79, lead: 'reed', backing: 'guitar', counter: 'vibes',
+    harmony: [e, ga, df, b, c, gm, a, d6],
+    melody: [[71, 74, 76], [78, 74, 71], [69, 73, 78], [81, 78, 74], [76, 79, 83], [82, 79, 76], [73, 76, 78], [76, 74]],
+    rhythm: [[.67, 2], [1.67, 3], [2.67, 1], [3.67, 4]],
+  },
+  yuiAfter: {
+    bpm: 88, lead: 'pluck', backing: 'electric', counter: 'bell',
+    harmony: [f, g, b, a, d, ef, ga, d6],
+    melody: [[73, 76, 73], [74, 78, 83], [78, 81, 86], [85, 83, 81], [78, 76, 81], [80, 78, 76], [78, 74, 71], [76, 74]],
+    rhythm: [[.25, 3], [1, 2], [1.75, 4], [2.5, 3], [3.25, 1]],
+  },
+  suzuAfter: {
+    bpm: 66, lead: 'cello', backing: 'guitar', counter: 'flute',
+    harmony: [d, g, e, fa, b, df, gm, d6],
+    melody: [[69, 66, 64], [66, 71, 74], [76, 71, 67], [66, 70, 73], [74, 78, 81], [81, 78, 76], [79, 76, 70], [69, 74]],
+    rhythm: [[.5, 3], [1.75, 4], [2.5, 2], [3.15, 1]],
+  },
 };
+
+const bridges = {
+  shibuya: { harmony: [g, df, e, aSus, f, b, e, a], melody: [[71, 74, 78], [76, 73, 69], [67, 71, 76], [74, 76, 69]] },
+  shinjuku: { harmony: [g, gm, df, b, e, a, d6, a], melody: [[74, 78, 79], [82, 79, 76], [78, 74, 69], [71, 74, 78]] },
+  akihabara: { harmony: [b, fa, g, a, f, b, e, ga], melody: [[78, 81, 83], [82, 78, 73], [74, 78, 81], [85, 81, 78]] },
+  asakusa: { harmony: [g, df, e, aSus, g, gm, a, d6], melody: [[74, 71, 69], [66, 69, 73], [76, 71, 67], [69, 71, 74]] },
+  tower: { harmony: [b, g, df, aSus, e, c, a, d6], melody: [[74, 78, 81], [79, 78, 74], [73, 69, 66], [67, 69, 76]] },
+  mio: { harmony: [g, df, e, a, bm, b, ga, d6], melody: [[78, 74, 71], [69, 73, 74], [76, 74, 71], [69, 73, 76]] },
+  ren: { harmony: [g, gm, df, b, e, ef, a, d6], melody: [[79, 76, 74], [70, 74, 76], [78, 74, 69], [71, 74, 78]] },
+  yui: { harmony: [b, g, f, a, d, ef, ga, d6], melody: [[81, 78, 74], [78, 74, 71], [73, 76, 81], [83, 81, 76]] },
+  suzu: { harmony: [g, e, df, ga, b, g, gm, d6], melody: [[71, 74, 78], [76, 71, 67], [66, 69, 73], [74, 71, 69]] },
+  solo: { harmony: [g, d, e, aSus, b, c, ga, d6], melody: [[71, 74, 78], [76, 74, 69], [67, 71, 74], [69, 74, 76]] },
+  mioAfter: { harmony: [g, gm, df, b, ef, e, a, d6], melody: [[74, 78, 79], [82, 79, 76], [78, 74, 73], [71, 74, 78]] },
+  renAfter: { harmony: [c, ga, d, b, e, gm, ga, d6], melody: [[76, 79, 83], [81, 79, 74], [78, 76, 73], [74, 78, 83]] },
+  yuiAfter: { harmony: [g, f, b, fa, g, ef, ga, d6], melody: [[83, 81, 78], [81, 78, 76], [78, 81, 86], [85, 82, 78]] },
+  suzuAfter: { harmony: [g, df, b, fa, b, e, gm, d6], melody: [[71, 74, 78], [76, 73, 69], [71, 74, 78], [82, 78, 73]] },
+};
+
+const timing = { shinjuku: [.37, 1.67, 2.67], akihabara: [.25, 1.25, 2.75], asakusa: [.5, 1.95, 3] };
 
 export function composeBar(cue, number) {
   const district = districts[cue.district];
@@ -107,58 +155,73 @@ export function composeBar(cue, number) {
   const finale = finales[cue.ending];
   const score = finale ?? district;
   const melody = finale ?? heroine ?? district;
-  const bar = number % score.harmony.length;
-  const [root, ...notes] = score.harmony[bar];
+  const phraseBar = number % (finale ? 24 : 16);
+  const bar = phraseBar % 8;
+  const bridge = phraseBar >= 8 && phraseBar < 16 ? bridges[cue.ending ?? cue.district] : null;
+  const harmony = bridge?.harmony ?? score.harmony;
+  const resolution = finale && phraseBar === 23;
+  const [root, ...notes] = harmony[bar];
   const progress = (cue.time - START) / (DAWN - START);
   const closeness = Math.min(1, (cue.affection ?? 0) / 9);
-  const walking = !heroine && !finale && cue.mood !== 'scene';
+  const chapter = cue.chapter ?? 0;
+  const walking = cue.mood === 'map';
+  const title = cue.mood === 'title';
+  const fuller = Boolean(bridge || (heroine && chapter >= 3));
   const events = [];
   const note = (voice, pitch, offset, length, volume, pan = 0) => events.push({ voice, pitch, offset, length, volume, pan });
 
-  // Hold the bass and leave space around the last chord.
-  const resolution = finale && bar === score.harmony.length - 1;
-  note('bass', root, 0, resolution ? 3.7 : 1.85, finale ? .085 : .115);
-  if (!finale) for (const offset of score.bass.slice(1)) {
-    const neighbor = offset === 3 ? score.harmony[(bar + 1) % score.harmony.length][0] : root + 7;
-    note('bass', neighbor, offset, .88, .058);
+  note('bass', root, 0, resolution ? 3.7 : finale ? 2.75 : 1.85, finale ? .077 : .10);
+  if (!finale || bridge) for (const offset of (finale ? [2.67] : score.bass.slice(1))) {
+    const neighbor = offset >= 3 ? harmony[(bar + 1) % harmony.length][0] : root + 7;
+    note('bass', neighbor, offset, .88, .045);
   }
 
   for (const [index, pitch] of notes.entries()) {
-    const voice = finale ? 'strings' : 'pad';
-    note(voice, pitch, index * .06, 3.65, (finale ? .029 : .018 + .012 * progress) * (index === 0 ? .72 : 1), (index - 1.5) * .28);
+    const voice = (finale && phraseBar >= 8) || (heroine && fuller) ? 'strings' : 'pad';
+    note(voice, pitch, index * .075, 3.54, (finale ? .024 : .016 + .012 * progress) * (index === 0 ? .72 : 1), (index - 1.5) * .28);
   }
 
   for (const [index, [offset, degree]] of score.rhythm.entries()) {
-    if (resolution && offset >= 2.5) break;
+    if (resolution && offset >= 1.5) break;
+    if (title && index % 2) continue;
     const octave = index % 2 === 0 && degree < 4 ? 12 : 0;
-    note(score.backing, notes[degree - 1] + octave, offset, 1.16, walking ? .055 : .036, index % 2 ? .37 : -.37);
+    note(score.backing, notes[degree - 1] + octave, offset, 1.16, walking ? .052 : .034, index % 2 ? .37 : -.37);
   }
 
-  if (!finale) {
+  if (!finale && !title) {
     const level = (walking ? .058 : .03) * (1 - progress * .64);
     for (const [index, [offset, style]] of score.drums.entries()) {
       events.push({ style, offset, volume: level * (index % 2 === 0 ? .72 : 1) });
     }
+    if (walking && district.bpm >= 80 && fuller) events.push({ style: 'kick', offset: 0, volume: level * .55 });
   }
 
-  const pitches = melody.melody[bar];
-  const timing = cue.district === 'shinjuku' && cue.ending !== 'solo' ? [.37, 1.67, 2.67] : [.22, 1.55, 2.6];
-  const level = finale ? .12 : heroine ? .08 + .031 * closeness : .085;
-  const phrase = pitches ? pitches.map((pitch, index) => [
-    timing[index], pitch, index === pitches.length - 1 ? (resolution ? 2.8 - timing[index] / 2 : 1.36) : .94,
+  const pitches = bridge ? bridge.melody[bar] ?? [notes[2] + 12, notes[bar % 3] + 12, notes[3] + 12] : melody.melody[bar];
+  const offsets = timing[cue.ending === 'solo' ? 'shibuya' : cue.district] ?? [.22, 1.55, 2.6];
+  const level = finale ? .11 : heroine ? .076 + .031 * closeness : .076;
+  const phrase = resolution ? [[.4, 74, 3.15]] : pitches ? pitches.map((pitch, index) => [
+    offsets[index], pitch, index === pitches.length - 1 ? 1.32 : .82,
   ]) : heroine.motif;
-  for (const [offset, pitch, length] of phrase) note(melody.lead, pitch, offset, length, level, .03);
-
-  if (finale || heroine && closeness >= .30) {
-    const counter = finale ?? heroine;
-    const pitch = counter.counter === 'cello' ? notes[1] - 12 : notes[bar % 2 + 1] + 12;
-    const volume = finale ? .06 : .027 + closeness * .027;
-    note(counter.counter, pitch, counter.counter === 'cello' ? .9 : 2.05, counter.counter === 'cello' ? 2.4 : 1.55, volume, -.4);
+  for (const [index, [offset, pitch, length]] of phrase.entries()) {
+    note(melody.lead, melody.lead === 'cello' ? pitch - 12 : pitch, offset, length, level * (index === 1 ? .83 : 1), .03);
   }
 
-  if ((progress > .53 || finale) && (bar % 4 === 2 || number % 16 === 5)) {
-    note('glass', notes[3] + 12, 3.33, 1.85, .038, .48);
+  const counter = (finale ?? heroine)?.counter;
+  if (counter && !resolution && (finale || closeness >= .30)) {
+    const low = counter === 'cello';
+    const pitch = low ? notes[1] - 12 : notes[bar % 2 + 1] + 12;
+    const volume = finale ? .046 : .023 + closeness * .027;
+    note(counter, pitch, low ? .9 : 2.05, low ? 2.35 : 1.24, volume, -.4);
+    if (fuller && bar % 2 === 0) note(counter, low ? notes[2] - 12 : notes[2] + 12, 3.22, 1.17, volume * .76, .37);
   }
-  const bpm = finale ? score.bpm : district.bpm - 6 * progress - (heroine ? 2 : 0);
-  return { events, bpm, brightness: finale ? 5200 : 7200 - 2050 * progress + 450 * closeness };
+
+  if (!resolution && (progress > .53 || finale) && (bar % 4 === 2 || phraseBar === 21)) {
+    note('glass', notes[3] + 12, 3.33, 1.85, .032, .48);
+  }
+  if (!resolution && (bridge || (finale && phraseBar >= 16)) && bar % 2 === 1) {
+    note(finale ? 'vibes' : 'glass', notes[2] + 12, .15, 1.4, .032, .52);
+    note(finale ? 'vibes' : 'glass', notes[3] + 12, 1.8, 1.25, .025, .43);
+  }
+  const bpm = finale ? score.bpm - (resolution ? 4 : 0) : district.bpm - 6 * progress - (heroine || title ? 2 : 0);
+  return { events, bpm, brightness: finale ? 4900 + (bridge ? 750 : 0) : 7200 - 2050 * progress + 450 * closeness };
 }

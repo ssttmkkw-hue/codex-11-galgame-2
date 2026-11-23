@@ -8,6 +8,8 @@ const instruments = {
   pluck: { harmonics: [1, .21, .32, .06, .13, .023, .038], attack: .008, decay: 3.75, release: .095 },
   bell: { harmonics: [1, .135, .025], overtone: [4.012, .15], attack: .013, decay: 2.1, release: .24 },
   glass: { harmonics: [1, .07, .085], overtone: [2.997, .07], attack: .056, decay: 2.45, release: .32 },
+  vibes: { harmonics: [1, .065, .04], overtone: [4, .21], attack: .019, decay: 1.42, release: .35 },
+  reed: { harmonics: [1, .14, .44, .055, .12, .024], attack: .09, sustain: .76, release: .27, vibrato: 4.4 },
   flute: { harmonics: [1, .14, .065, .014], attack: .14, sustain: .7, release: .33, vibrato: 2.7 },
   cello: { harmonics: [1, .56, .38, .19, .11, .065, .043], attack: .21, sustain: .67, release: .32, vibrato: 3.8 },
   pad: { harmonics: [1, .17, .045], overtone: [1.003, .41], attack: .54, sustain: .67, release: .7 },
@@ -24,12 +26,16 @@ const drums = {
 
 const hz = (note) => 440 * 2 ** ((note - 69) / 12);
 const floor = .00001;
-const sectionKey = ({ district, character, ending }) => ending ? `dawn:${ending}` : character ?? district;
+function sectionKey(cue) {
+  const piece = cue.ending ?? cue.character ?? (cue.mood === 'title' ? 'title' : cue.district);
+  return cue.preview ? `preview:${cue.preview}:${piece}` : piece;
+}
 
 export class NightMusic {
   constructor() {
     this.cue = { district: 'shibuya', character: null, time: START, mood: 'title', affection: 0, ending: null };
     this.level = .65;
+    this.retired = [];
   }
 
   async start() {
@@ -89,15 +95,17 @@ export class NightMusic {
     this.master.gain.setTargetAtTime(level ** 1.4 * .8, this.ctx.currentTime, .065);
   }
 
-  changeSection(at, key) {
+  changeSection(at, key, keepPhrase) {
     const old = this.section;
+    const fade = old ? Math.min(.95, 54 / old.bpm) : .2;
     if (old) {
-      old.bus.gain.setTargetAtTime(0, at, .105);
-      // Any already scheduled note releases safely through the reverb.
-      window.setTimeout(() => {
-        old.filter.disconnect();
-        old.bus.disconnect();
-      }, 1900);
+      if (old.bus.gain.cancelAndHoldAtTime) old.bus.gain.cancelAndHoldAtTime(at);
+      else {
+        old.bus.gain.cancelScheduledValues(at);
+        old.bus.gain.linearRampToValueAtTime(Math.min(1, (at - old.start) / old.fade), at);
+      }
+      old.bus.gain.linearRampToValueAtTime(0, at + fade);
+      this.retired.push({ filter: old.filter, bus: old.bus, at: at + fade });
     }
     const bus = this.ctx.createGain();
     const filter = this.ctx.createBiquadFilter();
@@ -105,11 +113,15 @@ export class NightMusic {
     filter.Q.value = .22;
     filter.frequency.value = 7200;
     bus.gain.setValueAtTime(0, at);
-    bus.gain.linearRampToValueAtTime(1, at + (old ? .21 : .11));
+    bus.gain.linearRampToValueAtTime(1, at + fade);
     filter.connect(bus);
     bus.connect(this.master);
     bus.connect(this.room);
-    this.section = { key, filter, bus, bar: 0, beat: 0, bpm: old?.bpm };
+    this.section = {
+      key, filter, bus, start: at, fade, bar: keepPhrase ? old.bar : 0, beat: 0,
+      bpm: keepPhrase ? old.bpm : null,
+      district: this.cue.district, ending: this.cue.ending, preview: this.cue.preview,
+    };
   }
 
   tone(bus, { voice, pitch, length, volume, pan }, at, beatLength) {
@@ -175,6 +187,23 @@ export class NightMusic {
 
   drum(bus, { style, volume }, at) {
     const ctx = this.ctx;
+    if (style === 'kick') {
+      const body = ctx.createOscillator();
+      const amp = ctx.createGain();
+      body.frequency.setValueAtTime(92, at);
+      body.frequency.exponentialRampToValueAtTime(48, at + .13);
+      amp.gain.setValueAtTime(floor, at);
+      amp.gain.exponentialRampToValueAtTime(volume, at + .012);
+      amp.gain.exponentialRampToValueAtTime(floor, at + .19);
+      body.connect(amp).connect(bus);
+      body.start(at);
+      body.stop(at + .195);
+      body.onended = () => {
+        body.disconnect();
+        amp.disconnect();
+      };
+      return;
+    }
     const { length, frequency, q } = drums[style];
     const source = ctx.createBufferSource();
     source.buffer = this.noise;
@@ -199,9 +228,14 @@ export class NightMusic {
   schedule() {
     if (this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
+    while (this.retired[0]?.at <= now) {
+      const { filter, bus } = this.retired.shift();
+      filter.disconnect();
+      bus.disconnect();
+    }
     if (this.next < now) this.next = now + .05;
 
-    // Schedule one beat at a time so scene changes can crossfade on the pulse.
+    // Look ahead one beat at a time. Play the rest of the current bar during a walking or scene change.
     while (this.next <= now + .14) {
       this.next += this.playBeat(this.next);
     }
@@ -209,7 +243,14 @@ export class NightMusic {
 
   playBeat(at) {
     const key = sectionKey(this.cue);
-    if (key !== this.section?.key) this.changeSection(at, key);
+    const previous = this.section;
+    if (key !== previous?.key) {
+      const immediate = !previous || this.cue.ending || previous.ending || this.cue.preview || previous.preview;
+      if (immediate || previous.beat === 0) {
+        const keepPhrase = !immediate && !previous.ending && previous.district === this.cue.district;
+        this.changeSection(at, key, keepPhrase);
+      }
+    }
     const section = this.section;
     if (section.beat === 0) {
       const { events, bpm, brightness } = composeBar(this.cue, section.bar);

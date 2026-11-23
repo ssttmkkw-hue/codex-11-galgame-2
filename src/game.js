@@ -1,5 +1,7 @@
 import { START, DAWN, districts, heroines, prologue, routes, towerEvent, endings } from './story.js';
 
+export const ORIGINAL_ROUTE_LENGTH = 5;
+
 const journeys = {
   shibuya: { shinjuku: 42, akihabara: 88, asakusa: 103, tower: 51 },
   shinjuku: { akihabara: 76, asakusa: 96, tower: 67 },
@@ -16,16 +18,21 @@ export function clock(minutes) {
   return [Math.floor(minutes / 60), minutes % 60].map((number) => String(number).padStart(2, '0')).join(':');
 }
 
+export const endingHasCoda = (state) => Boolean(endings[state.ending]?.coda &&
+  state.bonds[state.ending].chapter >= ORIGINAL_ROUTE_LENGTH);
+
+export function endingLines(id, includeCoda, legacy = false) {
+  const { lines, coda, after } = endings[id];
+  return [...lines, ...(includeCoda && coda ? coda : []), ...(legacy ? [] : after ?? [])];
+}
+
 export function storyScene(state) {
   const { kind, id, chapter } = state.scene ?? {};
   if (kind === 'prologue') return prologue;
   if (kind === 'tower') return towerEvent;
   if (kind === 'route') return { ...routes[id][chapter], character: id, district: heroines[id].district };
   if (kind === 'ending') {
-    const ending = endings[id];
-    const bond = state.bonds[id];
-    if (!ending.coda || bond.chapter < routes[id].length) return ending;
-    return { ...ending, lines: [...ending.lines, ...ending.coda] };
+    return { ...endings[id], lines: endingLines(id, endingHasCoda(state), state.version === 1) };
   }
   return null;
 }
@@ -58,9 +65,9 @@ function eventLog(state, text) {
 }
 
 export function newNight() {
-  const bonds = Object.fromEntries(Object.keys(heroines).map((id) => [id, { chapter: 0, affection: 0, promise: false }]));
+  const bonds = Object.fromEntries(Object.keys(heroines).map((id) => [id, { chapter: 0, affection: 0, promise: false, followUp: false }]));
   return enter({
-    version: 1, time: START, district: 'shibuya', districts: ['shibuya'],
+    version: 2, time: START, district: 'shibuya', districts: ['shibuya'],
     bonds, towerSeen: false, towerMemory: false, ending: null, log: [],
   }, { kind: 'prologue' });
 }
@@ -81,9 +88,11 @@ export function choose(state, index) {
   const { kind, id, chapter } = state.scene;
   let next = { ...state, time: state.time + choice.cost, line: 0, reply: index };
   if (kind === 'route') {
-    const affection = state.bonds[id].affection + choice.affection;
-    const promise = state.bonds[id].promise || routes[id][chapter].promiseChoice === index;
-    next = { ...next, bonds: { ...state.bonds, [id]: { chapter: chapter + 1, affection, promise } } };
+    const bond = state.bonds[id];
+    const affection = bond.affection + choice.affection;
+    const promise = bond.promise || routes[id][chapter].promiseChoice === index;
+    const followUp = bond.followUp || choice.followUp === true;
+    next = { ...next, bonds: { ...state.bonds, [id]: { chapter: chapter + 1, affection, promise, followUp } } };
   }
   if (kind === 'tower') next = { ...next, towerSeen: true, towerMemory: index === 0 };
   return recordLine(eventLog(next, `${choice.label}（+${choice.cost} 分钟）`));
@@ -131,10 +140,12 @@ export function dawnOptions(state) {
   const options = [{ id: local, district: state.district, cost: DAWN - state.time, walk: 0, label: '留在这里等始发' }];
   for (const [id, heroine] of Object.entries(heroines)) {
     if (!state.bonds[id].promise) continue;
-    options.push({
-      id, district: heroine.district, cost: DAWN - state.time, walk: walkingTime(state.district, heroine.district),
-      label: `与${heroine.short}一起等始发`,
-    });
+    const travel = { district: heroine.district, cost: DAWN - state.time, walk: walkingTime(state.district, heroine.district) };
+    options.push({ id, ...travel, label: `与${heroine.short}一起等始发` });
+    if (state.bonds[id].followUp) {
+      const alternate = `${id}After`;
+      options.push({ id: alternate, ...travel, label: endings[alternate].rendezvous });
+    }
   }
   return options;
 }
